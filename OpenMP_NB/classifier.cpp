@@ -110,7 +110,7 @@ int GaussianNB::predict(vector<vector<double>> X_test, vector<int> Y_test)
 
 	map <int, double> p;
 
-	int result=0;
+	int result=1;
 	int score =0;
 
 	#pragma omp parallel shared(score)
@@ -167,7 +167,7 @@ void MultionomialGB::train(vector<vector<double>> train, vector<int> label)
 	//int verbose = 0;
 	cout << "Inside train " << endl;
 	int labels;
-        #pragma omp parallel 
+        //#pragma omp parallel 
 	for (auto i = 0; i < train.size(); i++)
 	{
 		labels = label[i];
@@ -281,7 +281,7 @@ int MultionomialGB::predict(vector<vector<double>> X_test, vector<int> Y_test)
 			}
 		}
 
-                #pragma omp critical
+                //#pragma omp critical
 
 		if (result==Y_test[i])
 		{
