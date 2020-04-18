@@ -1,1 +1,0 @@
-/var/spool/slurmd/job771008/slurm_script: line 10: 31476 Segmentation fault      (core dumped) ./model
