@@ -140,6 +140,7 @@ int main() {
 
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+
   } else if (algoID == 1) {
     MultionomialGB model = MultionomialGB();
     cout << "Calling train" << endl;
@@ -151,6 +152,21 @@ int main() {
 
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+  }
+
+  else if (algoID == 2) {
+    cout<<"Training a Bernoulli NB classifier"<<endl;
+
+    BernoulliNB model = BernoulliNB();
+    model.train(X_train, Y_train);
+
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+
   }
 
   return 0;

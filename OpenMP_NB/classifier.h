@@ -55,7 +55,24 @@ public:
 
 };
 
+class BernoulliNB {
+
+public:
+	map <int, vector<double>> feature_probs_;
+	std::vector<int>::size_type n_features_ = 1; // Number of features
+	map <int, int> class_count_; // Number of samples in each class
+	map <int, double> class_priors_; // Class prior probabilities
+	vector <int> labels_list_; // List of unique labels
+
+	BernoulliNB();
+
+	virtual ~BernoulliNB();
+
+	void train(vector<vector<double> > data, vector<int>  labels);
+
+	int predict(vector<vector<double> > data, vector<int>  labels);
+
+};
+
+
 #endif
-
-
-
