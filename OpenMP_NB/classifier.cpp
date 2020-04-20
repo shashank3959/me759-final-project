@@ -308,7 +308,7 @@ void BernoulliNB::train(vector<vector<double>> data, vector<int> labels)
 	for (uint i = 0; i < labels_list_.size(); ++i) {
 		// TODO: Use stl transform for this
 		for (uint j = 0; j < n_features_; ++j) {
-			feature_probs_[labels[i]][j] /= class_count_[i];
+			feature_probs_[i][j] /= class_count_[i];
 		}
 		/* Calculate class priors for each class */
 		class_priors_[i] = (double)class_count_[i] / train_size;
@@ -348,6 +348,106 @@ int BernoulliNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 				prob_class[lab] *= pow(feature_probs_[lab][feat], test_vec[feat]);
 				prob_class[lab] *= pow((1 - feature_probs_[lab][feat]),
 																											(1- test_vec[feat]));
+			}
+			if (max < prob_class[lab]) {
+				max = prob_class[lab];
+				result = lab;
+			}
+		}
+		if (result == Y_test[i]) {
+			score += 1;
+		}
+	}
+
+	return score;
+}
+
+/************Multinomial Naive Bayes (Text Classification)********************/
+MultinomialNB::MultinomialNB() {}
+
+MultinomialNB::~MultinomialNB() {}
+
+void MultinomialNB::train(vector<vector<double>> data, vector<int> labels) {
+	int train_size = labels.size();
+	n_features_ = data[0].size();
+
+	/* For laplacian smoothing */
+	double alpha = 1.0;
+	uint vocab_size = n_features_; /* As many features as words in train set */
+
+	/* Number of unique labels */
+	labels_list_ = labels;
+	std::sort(labels_list_.begin(), labels_list_.end());
+	auto newEnd = std::unique(labels_list_.begin(), labels_list_.end());
+	labels_list_.erase(newEnd, labels_list_.end());
+
+	/* Initializing class variables */
+	for (auto lab : labels_list_) {
+		class_count_[lab] = 0;
+		class_priors_[lab] = 0.0;
+		feat_count_[lab] = 0;
+		vector <double> temp(data[0].size(), 0.0); /* 1 x n_features */
+		feature_probs_[lab] = temp; /* n_labels x n_features */
+	}
+
+	/* frequency of occurence of each feature */
+	for (int i = 0; i < train_size; ++i) { /* For each example */
+		for (uint j = 0; j < n_features_; ++j) { /* For each feature*/
+			// TOFIX: INDIRECTION */
+			// TOFIX: Currently this requires labels to be in format 0, 1, 2, 3 ...
+			feature_probs_[labels[i]][j] += data[i][j];
+
+			// Sum of all occurence of words for each class
+			feat_count_[labels[i]] += data[i][j];
+		}
+		class_count_[labels[i]] += 1;
+	}
+
+	/* Calculate word occurence probabilities per label */
+	for (uint i = 0; i < labels_list_.size(); ++i) {
+		// TODO: Use stl transform for this
+		for (uint j = 0; j < n_features_; ++j) {
+			// Conditional probs with laplacian smoothing
+			feature_probs_[i][j] = ((double)feature_probs_[labels[i]][j] + alpha) / \
+			((double)(feat_count_[i] + vocab_size));
+		}
+		/* Calculate class priors for each class */
+		class_priors_[i] = (double)class_count_[i] / train_size;
+	}
+
+	return;
+}
+
+
+int MultinomialNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
+	// TODO :n_features_ is actually redundant and SHOULD NOT change from train */
+	n_features_ = X_test[0].size();
+	std::vector<int>::size_type test_size = Y_test.size();
+	int result = 0;
+	int score = 0;
+	uint i = 0;
+	double max = 0.0;
+	std::vector<int>::size_type lab = 0, feat = 0;
+
+	/* Note that labels_list_ is populated in the train function */
+	uint n_labels = labels_list_.size();
+
+	// probability for element belonging in a particular class
+	map <int, double> prob_class;
+
+	/* For each example in the test set */
+	for (i = 0; i < test_size; ++i) {
+		vector<double> test_vec = X_test[i];
+		max = 0.0;
+
+		/* For each class.
+		Note that labels_list_ is populated in the train function */
+		for (lab = 0; lab < n_labels; ++lab) {
+			prob_class[lab] = class_priors_[lab];
+			/* For each feature */
+			for (feat = 0; feat < n_features_; ++feat) {
+			// TODO: Use a reduction technique here
+			prob_class[lab] *= pow(feature_probs_[lab][feat], test_vec[feat]);
 			}
 			if (max < prob_class[lab]) {
 				max = prob_class[lab];

@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
   0: GaussianNB
   1: MultionomialGB
   2: BernoulliNB
-  3: ComplementNB
+  3: MultinomialNB
+  4: ComplementNB
   */
   int algoID = atoi(argv[1]);
   /*
@@ -101,17 +102,33 @@ int main(int argc, char *argv[]) {
   #pragma omp parallel sections
     {
       #pragma omp section
-      X_train = Load_State("X_train.csv");
+      X_train = Load_State("X_train_onehot.csv");
 
       #pragma omp section
-      X_test = Load_State("X_test.csv");
+      X_test = Load_State("X_test_onehot.csv");
 
       #pragma omp section
-      Y_train = Load_Label("y_train.csv");
+      Y_train = Load_Label("y_train_onehot.csv");
 
       #pragma omp section
-      Y_test = Load_Label("y_test.csv");
+      Y_test = Load_Label("y_test_onehot.csv");
     }
+  } else if (algoID == 3) {
+    /* MultinomialNB */
+    #pragma omp parallel sections
+      {
+        #pragma omp section
+        X_train = Load_State("X_train_bow.csv");
+
+        #pragma omp section
+        X_test = Load_State("X_test_bow.csv");
+
+        #pragma omp section
+        Y_train = Load_Label("y_train_bow.csv");
+
+        #pragma omp section
+        Y_test = Load_Label("y_test_bow.csv");
+      }
   }
 
   cout << "X_train number of elements " << X_train.size() << endl;
@@ -152,9 +169,7 @@ int main(int argc, char *argv[]) {
 
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
-  }
-
-  else if (algoID == 2) {
+  } else if (algoID == 2) {
     cout<<"Training a Bernoulli NB classifier"<<endl;
 
     BernoulliNB model = BernoulliNB();
@@ -167,6 +182,18 @@ int main(int argc, char *argv[]) {
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
+  } else if (algoID == 3) {
+    /* MultinomialNB */
+    cout<<"Training a Multinomial NB classifier"<<endl;
+    MultinomialNB model = MultinomialNB();
+    model.train(X_train, Y_train);
+
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
   }
 
   return 0;
