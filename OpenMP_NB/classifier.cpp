@@ -121,7 +121,7 @@ int GaussianNB::predict(vector<vector<double>> X_test, vector<int> Y_test)
 
 // ******************************** Multinomial Navie Bayes************************************************
 
-/*
+// /*
 MultionomialGB::MultionomialGB() {
 
 }
@@ -267,7 +267,7 @@ int MultionomialGB::predict(vector<vector<double>> X_test, vector<int> Y_test)
 
 
 }
-*/
+// */
 
 // ******************************** Bernoulli Naive Bayes ********************/
 

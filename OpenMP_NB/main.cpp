@@ -53,7 +53,7 @@ vector<int> Load_Label(string file_name) {
   return label_out;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
 
   /*
   algoID
@@ -62,7 +62,7 @@ int main() {
   2: BernoulliNB
   3: ComplementNB
   */
-  int algoID = 2;
+  int algoID = atoi(argv[1]);
   /*
   if (string(argv[i]) == "-d") {
           algoID = atoi(argv[i + 1]);
