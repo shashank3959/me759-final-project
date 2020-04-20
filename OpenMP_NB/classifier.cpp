@@ -344,6 +344,7 @@ int BernoulliNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 
 			/* For each feature */
 			for (feat = 0; feat < n_features_; ++feat) {
+				// TODO: Use a reduction technique here
 				prob_class[lab] *= pow(feature_probs_[lab][feat], test_vec[feat]);
 				prob_class[lab] *= pow((1 - feature_probs_[lab][feat]),
 																											(1- test_vec[feat]));
