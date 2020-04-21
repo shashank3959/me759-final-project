@@ -24,7 +24,7 @@ void GaussianNB::train(vector<vector<double>> data, vector<int> labels)
 	map <int, int> class_count;
 	int train_size = labels.size();
 	int i,j,k;
-	
+
 	labels_list_ = labels;
 	std::sort(labels_list_.begin(), labels_list_.end());
 	std::vector<int>::iterator newEnd;
@@ -35,58 +35,58 @@ void GaussianNB::train(vector<vector<double>> data, vector<int> labels)
 	features_count_ = int(data[0].size());
 
 	std::vector<int>::size_type lab = 0, l = 0;
-	
-	#pragma omp parallel 
+
+	#pragma omp parallel
 	{
-		#pragma omp for 
+		#pragma omp for
 		for (lab = 0; lab < labels_list_.size(); lab++) {
-			
+
 			class_count[lab] = 0;
 			vector <float> temp(data[0].size(), 0.0);
 			f_stats_[lab].push_back(temp);
 			f_stats_[lab].push_back(temp);
 			f_stats_[lab].push_back(temp);
 		}
-		
-		#pragma omp for 
+
+		#pragma omp for
 		for (i = 0; i < train_size; i++) {
 			#pragma omp critical
 			   {lfm[labels[i]].push_back(data[i]); // x_train per class
-			
+
 			   class_count[labels[i]] += 1; // class count
 			}
 		}
-		
+
 		i = 0;
-		#pragma omp for 
+		#pragma omp for
 		for (j = 0; j < features_count_; j++) {
-				
+
 				f_stats_[labels[i]][0][j%features_count_] += data[i][j%features_count_]; // sum per feature
-				
+
 				if (j%features_count_==0 && j!=0)
 				    i +=1;
-				
+
 			}
 		#pragma omp for
 		for (lab = 0; lab < labels_list_.size(); lab++) {
 			#pragma omp critical
 			p_class_[lab] = class_count[lab] * 1.0 / train_size;
-			
+
 		}
 
 		k = 0;
-		
-		#pragma omp for 
+
+		#pragma omp for
 		for (j = 0; j < features_count_; j++) {
 				#pragma omp critical
 				   f_stats_[k][0][j%features_count_] /= class_count[k];
-				
+
 				if (j%features_count_==0 && j!=0)
 				    k +=1;
 
 			}
-		
-		#pragma omp for 
+
+		#pragma omp for
 		for (lab = 0; lab < labels_list_.size(); lab++) {
 			for (j = 0; j < features_count_; j++) {
 				for (l = 0; l < lfm[lab].size(); l++) {
@@ -100,9 +100,9 @@ void GaussianNB::train(vector<vector<double>> data, vector<int> labels)
 				  f_stats_[lab][1][j] /= class_count[lab];
 				  f_stats_[lab][2][j] = 1.0 / sqrt(2 * M_PI * f_stats_[lab][1][j]); // 1/sqrt(2*PI*var)
 				}
-			}	
+			}
 		}
-		
+
 
 	}
 
