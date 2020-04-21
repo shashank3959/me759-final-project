@@ -6,6 +6,7 @@
 #include <map>
 #include <assert.h>
 #include <algorithm>
+#include <numeric>
 #include "classifier.h"
 #include <omp.h>
 
@@ -326,7 +327,7 @@ void BernoulliNB::train(vector<vector<double>> data, vector<int> labels)
 
 	/* How many documents contain each term (per label) */
 	for (int i = 0; i < train_size; ++i) { /* For each example */
-		for (uint j = 0; j < n_features_; ++j) { /* For each feature*/
+		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature*/
 			// TOFIX: INDIRECTION */
 			// TOFIX: Currently this requires labels to be in format 0, 1, 2, 3 ...
 			feature_probs_[labels[i]][j] += data[i][j];
@@ -335,9 +336,9 @@ void BernoulliNB::train(vector<vector<double>> data, vector<int> labels)
 	}
 
 	/* Convert the frequency to probability */
-	for (uint i = 0; i < labels_list_.size(); ++i) {
+	for (unsigned int i = 0; i < labels_list_.size(); ++i) {
 		// TODO: Use stl transform for this
-		for (uint j = 0; j < n_features_; ++j) {
+		for (unsigned int j = 0; j < n_features_; ++j) {
 			feature_probs_[i][j] /= class_count_[i];
 		}
 		/* Calculate class priors for each class */
@@ -353,7 +354,7 @@ int BernoulliNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 	std::vector<int>::size_type test_size = Y_test.size();
 	int result = 0;
 	int score = 0;
-	uint i = 0;
+	unsigned int i = 0;
 	double max = 0.0;
 	std::vector<int>::size_type lab = 0, feat = 0;
 
@@ -401,9 +402,9 @@ void MultinomialNB::train(vector<vector<double>> data, vector<int> labels) {
 	int train_size = labels.size();
 	n_features_ = data[0].size();
 
-	/* For laplacian smoothing */
+	/* For alpha = 1 for laplacian smoothing, and alpha < 1 for lidstone smoothing */
 	double alpha = 1.0;
-	uint vocab_size = n_features_; /* As many features as words in train set */
+	unsigned int vocab_size = n_features_; /* As many features as words in train set */
 
 	/* Number of unique labels */
 	labels_list_ = labels;
@@ -422,8 +423,8 @@ void MultinomialNB::train(vector<vector<double>> data, vector<int> labels) {
 
 	/* frequency of occurence of each feature */
 	for (int i = 0; i < train_size; ++i) { /* For each example */
-		for (uint j = 0; j < n_features_; ++j) { /* For each feature*/
-			// TOFIX: INDIRECTION */
+		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature*/
+			// TOFIX: INDIRECTION
 			// TOFIX: Currently this requires labels to be in format 0, 1, 2, 3 ...
 			feature_probs_[labels[i]][j] += data[i][j];
 
@@ -434,9 +435,9 @@ void MultinomialNB::train(vector<vector<double>> data, vector<int> labels) {
 	}
 
 	/* Calculate word occurence probabilities per label */
-	for (uint i = 0; i < labels_list_.size(); ++i) {
+	for (unsigned int i = 0; i < labels_list_.size(); ++i) {
 		// TODO: Use stl transform for this
-		for (uint j = 0; j < n_features_; ++j) {
+		for (unsigned int j = 0; j < n_features_; ++j) {
 			// Conditional probs with laplacian smoothing
 			feature_probs_[i][j] = ((double)feature_probs_[labels[i]][j] + alpha) / \
 			((double)(feat_count_[i] + vocab_size));
@@ -455,12 +456,12 @@ int MultinomialNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 	std::vector<int>::size_type test_size = Y_test.size();
 	int result = 0;
 	int score = 0;
-	uint i = 0;
+	unsigned int i = 0;
 	double max = 0.0;
 	std::vector<int>::size_type lab = 0, feat = 0;
 
 	/* Note that labels_list_ is populated in the train function */
-	uint n_labels = labels_list_.size();
+	unsigned int n_labels = labels_list_.size();
 
 	// probability for element belonging in a particular class
 	map <int, double> prob_class;
@@ -490,4 +491,142 @@ int MultinomialNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 	}
 
 	return score;
+}
+
+
+/************Complement Naive Bayes (Text Classification)********************/
+ComplementNB::ComplementNB() {}
+
+ComplementNB::~ComplementNB() {}
+
+/* DOUBT: No priors required?
+Implementation reference:
+https://scikit-learn.org/stable/modules/naive_bayes.html#complement-naive-bayes
+*/
+void ComplementNB::train(vector<vector<double>> data, vector<int> labels) {
+	unsigned int train_size = labels.size();
+	n_features_ = data[0].size();
+	unsigned int n_unique_labels = 0;
+
+	/* Params for laplacian smoothing */
+	double alpha_feat = 1.0; // alpha for each feature
+	double alpha = (double)n_features_ * alpha_feat;
+
+	/* Number of unique labels */
+	labels_list_ = labels;
+	std::sort(labels_list_.begin(), labels_list_.end());
+	auto newEnd = std::unique(labels_list_.begin(), labels_list_.end());
+	labels_list_.erase(newEnd, labels_list_.end());
+
+	n_unique_labels = labels_list_.size();
+
+	/* Initializing class variables */
+	for (auto lab: labels_list_) {
+		class_count_[lab] = 0; // Total docs in each class
+		feat_count_[lab] = 0; // Total words in each class
+
+		// TODO: Move temp declaration out of the loop
+		vector <int> temp(data[0].size(), 0); /* 1 x n_features */
+		feature_frequencies_[lab] = temp;
+
+		// TODO: Move temp declaration out of the loop
+		vector <double> temp_double(data[0].size(), 0.0); /* 1 x n_features */
+		feature_weights_[lab] = temp_double;
+	}
+
+	/* Initializing total occurence vectors */
+	vector <int> temp(data[0].size(), 0);
+	all_occur_per_term = temp;
+	all_occur = 0;
+
+	/* frequency of occurence of each feature by class */
+	for (unsigned int i = 0; i < train_size; ++i) { /* For each example */
+		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature*/
+			// TOFIX: INDIRECTION
+			// TOFIX: Currently this requires labels to be in format 0, 1, 2, 3 ...
+			feature_frequencies_[labels[i]][j] += data[i][j];
+			all_occur_per_term[j] += data[i][j];
+
+			// Sum of occurence of all words for each class
+			feat_count_[labels[i]] += data[i][j];
+		}
+		class_count_[labels[i]] += 1;
+	}
+
+	/* Total occurences of all words in training set */
+	all_occur = accumulate(all_occur_per_term.begin(), all_occur_per_term.end(), 0);
+
+	// Variables required for next loop
+	unsigned int num_sum = 0, den_sum = 0;
+
+	/* Complement calculations for getting feature weights */
+	for (unsigned int i = 0; i < n_unique_labels; ++i) { /* For each class */
+		den_sum = all_occur - accumulate(feature_frequencies_[i].begin(), \
+																		 feature_frequencies_[i].end(), 0);
+
+		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature */
+
+			// cout<<"all occure for term"<<j<<all_occur_per_term[j]<<endl;
+			/* Complement Calculations */
+			num_sum = all_occur_per_term[j] - feature_frequencies_[i][j];
+
+			feature_weights_[i][j] = log(((double)num_sum + alpha_feat) / \
+																	 ((double)den_sum + alpha));
+		}
+	}
+
+	/* Normalizing feature weights for each class.
+	This supposedly alleviates class imbalance */
+	for (unsigned int i = 0; i < n_unique_labels; ++i) { /* For each class */
+		den_sum = accumulate(feature_weights_[i].begin(), \
+																		 feature_weights_[i].end(), 0.0);
+
+		// TODO: Use stl transform for this, this is super inefficient
+		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature */
+			feature_weights_[i][j] /= den_sum;
+		}
+	}
+
+	return;
+}
+
+int ComplementNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
+	double min = 0.0;
+	std::vector<int>::size_type lab = 0, feat = 0;
+	std::vector<int>::size_type test_size = Y_test.size();
+	int result = 0;
+	unsigned int score = 0;
+	unsigned int i = 0;
+
+	/* Note that labels_list_ is populated in the train function */
+	unsigned int n_labels = labels_list_.size();
+
+	// probability for element belonging in a particular class
+	map <int, double> prob_class;
+
+	/* For each example in the test set */
+	for (i = 0; i < test_size; ++i) {
+		/* Move test_vec declaration outside the loop */
+		vector<double> test_vec = X_test[i];
+		min = 0.0;
+
+		/* For each class check if it's the poorest complement match */
+		for (lab = 0; lab < n_labels; ++lab) {
+			prob_class[lab] = 0.0;
+			for (feat = 0; feat < n_features_; ++feat) {
+			// TODO: Use a reduction technique here
+			prob_class[lab] += feature_weights_[lab][feat] * (double)test_vec[feat];
+			}
+			if (min > prob_class[lab]) {
+				min = prob_class[lab];
+				result = lab;
+			}
+		}
+		if (result == Y_test[i]) {
+			score += 1;
+		}
+	}
+
+	return score;
+
 }

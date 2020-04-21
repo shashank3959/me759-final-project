@@ -94,4 +94,29 @@ public:
 
 };
 
+
+class ComplementNB {
+
+public:
+	map <int, vector<int>> feature_frequencies_; // Feature frequencies for each class
+	map <int, vector<double>> feature_weights_; // Feature weights for each class
+	vector <int> all_occur_per_term; // Total occurences of a term in whole dataset
+	int all_occur; // Total count of all occurences of all words
+	std::vector<int>::size_type n_features_ = 1; // Number of features
+	map <int, int> class_count_; // Number of samples in each class
+	map <int, double> class_priors_; // Class prior probabilities
+	vector <int> labels_list_; // List of unique labels
+	map <int, int> feat_count_; // Total feats/words in each class
+
+
+	ComplementNB();
+
+	virtual ~ComplementNB();
+
+	void train(vector<vector<double> > data, vector<int>  labels);
+
+	int predict(vector<vector<double> > data, vector<int>  labels);
+
+};
+
 #endif

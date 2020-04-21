@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
       #pragma omp section
       Y_test = Load_Label("y_test_onehot.csv");
     }
-  } else if (algoID == 3) {
-    /* MultinomialNB */
+  } else if (algoID == 3 || algoID == 4) {
+    /* MultinomialNB or ComplementNB */
     #pragma omp parallel sections
       {
         #pragma omp section
@@ -139,6 +139,7 @@ int main(int argc, char *argv[]) {
   cout << "X_test element size " << X_test[0].size() << endl;
   cout << "Y_test number of elements " << Y_test.size() << endl << endl;
 
+  /* TODO: Remove code duplication below */
   if (algoID == 0) {
     duration<double, std::milli> duration_sec;
     start = high_resolution_clock::now();
@@ -170,6 +171,7 @@ int main(int argc, char *argv[]) {
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
   } else if (algoID == 2) {
+    /* BernoulliNB */
     cout<<"Training a Bernoulli NB classifier"<<endl;
 
     BernoulliNB model = BernoulliNB();
@@ -186,6 +188,18 @@ int main(int argc, char *argv[]) {
     /* MultinomialNB */
     cout<<"Training a Multinomial NB classifier"<<endl;
     MultinomialNB model = MultinomialNB();
+    model.train(X_train, Y_train);
+
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+  } else if (algoID == 4) {
+    /* ComplementNB */
+    cout<<"Training a ComplementNB classifier"<<endl;
+    ComplementNB model = ComplementNB();
     model.train(X_train, Y_train);
 
     int score = 0;
