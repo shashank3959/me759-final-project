@@ -58,12 +58,11 @@ int main(int argc, char *argv[]) {
   /*
   algoID
   0: GaussianNB
-  1: MultionomialGB
-  2: BernoulliNB
-  3: MultinomialNB
-  4: ComplementNB
+  1: BernoulliNB
+  2: MultinomialNB
+  3: ComplementNB
   */
-  int algoID = 3;
+  int algoID = 0;
   /*
   if (string(argv[i]) == "-d") {
           algoID = atoi(argv[i + 1]);
@@ -83,7 +82,7 @@ int main(int argc, char *argv[]) {
   vector<int> Y_test;
 
   /* GaussianNB or MultionomialNB */
-  if (algoID == 0 || algoID == 1) {
+  if (algoID == 0 ) {
     #pragma omp parallel sections
     {
       #pragma omp section
@@ -98,7 +97,7 @@ int main(int argc, char *argv[]) {
       #pragma omp section
       Y_test = Load_Label("test_labels.csv");
     }
-  } else if (algoID == 2) {
+  } else if (algoID == 1) {
   /* BernoulliNB */
   #pragma omp parallel sections
     {
@@ -114,7 +113,7 @@ int main(int argc, char *argv[]) {
       #pragma omp section
       Y_test = Load_Label("y_test_onehot.csv");
     }
-  } else if (algoID == 3 || algoID == 4) {
+  } else if (algoID == 2 || algoID == 3) {
     /* MultinomialNB or ComplementNB */
     #pragma omp parallel sections
       {
@@ -161,17 +160,6 @@ int main(int argc, char *argv[]) {
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
   } else if (algoID == 1) {
-    MultionomialGB model = MultionomialGB();
-    cout << "Calling train" << endl;
-    model.train(X_train, Y_train);
-
-    int score = 0;
-
-    score = model.predict(X_test, Y_test);
-
-    double fraction_correct = double(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
-  } else if (algoID == 2) {
     /* BernoulliNB */
     cout<<"Training a Bernoulli NB classifier"<<endl;
     BernoulliNB model = BernoulliNB();
@@ -184,7 +172,7 @@ int main(int argc, char *argv[]) {
     end = high_resolution_clock::now();
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
     tt+=duration_sec.count();
-    //cout << "training time " << duration_sec.count() << endl;
+  
   } 
     cout << "training time " << tt/10<< endl;
     int score = 0;
@@ -194,7 +182,7 @@ int main(int argc, char *argv[]) {
     double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
-  } else if (algoID == 3) {
+  } else if (algoID == 2) {
     /* MultinomialNB */
     cout<<"Training a Multinomial NB classifier"<<endl;
     MultinomialNB model = MultinomialNB();
@@ -206,7 +194,7 @@ int main(int argc, char *argv[]) {
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
   
     tt+=duration_sec.count();
-    //cout << "training time " << duration_sec.count() << endl;
+    
    } 
     cout << "training time " << tt/10<< endl;
 
@@ -216,22 +204,21 @@ int main(int argc, char *argv[]) {
 
     double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
-  } else if (algoID == 4) {
+  } else if (algoID == 3) {
     /* ComplementNB */
     cout<<"Training a ComplementNB classifier"<<endl;
     ComplementNB model = ComplementNB();
     for(int i=0;i<10;i++)
    {
     start = high_resolution_clock::now();
-    
 
     model.train(X_train, Y_train);
     end = high_resolution_clock::now();
-   duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
 	
     tt+=duration_sec.count();
-    //cout << "training time " << duration_sec.count() << endl;
-  } 
+    
+   } 
     cout << "training time " << tt/10<< endl;
 
     int score = 0;

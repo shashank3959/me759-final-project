@@ -49,49 +49,53 @@ void GaussianNB::train(vector<vector<double>> data, vector<int> labels)
 			f_stats_[lab].push_back(temp);
 		}
 	
-	//gathering data list per class; count classes; sum per class
-	#pragma omp for collapse(2)
-	for (auto i = 0; i < train_size; i++) {
-		
-		for (auto j = 0; j < features_count_; j++) {
-			f_stats_[labels[i]][0][j] += data[i][j]; // sum per feature
-			if (j==0)
-			  {
-				#pragma omp critical
-				{
-				lfm[labels[i]].push_back(data[i]); // x_train per class
-				class_count[labels[i]] += 1; // class count
-				}
-			  }
-		}
-	}
-      
-	// transforming f_stats 0 sum into mean	
-	#pragma omp for collapse(2)
-	for (auto lab =0 ; lab< labels_list_.size();++lab) {
-		for (auto j = 0; j < features_count_; j++) {
-			f_stats_[lab][0][j] /= class_count[lab];
-			if(j==0)
-			   p_class_[lab] = class_count[lab] * 1.0 / labels.size();
-		}
-		
-	}
-		
-	}
-	for (lab = 0; lab < labels_list_.size(); lab++) {
-		for (j = 0; j < features_count_; j++) {
-			for (l = 0; l < lfm[lab].size(); l++) {
-				
-
-				  f_stats_[lab][1][j] += pow(lfm[lab][l][j] - f_stats_[lab][0][j], 2);
+		//gathering data list per class; count classes; sum per class
+		#pragma omp for collapse(2)
+		for (auto i = 0; i < train_size; i++) {
 			
+			for (auto j = 0; j < features_count_; j++) {
+				f_stats_[labels[i]][0][j] += data[i][j]; // sum per feature
+				if (j==0)
+				  {
+					#pragma omp critical
+					{
+					lfm[labels[i]].push_back(data[i]); // x_train per class
+					class_count[labels[i]] += 1; // class count
+					}
+				  }
 			}
-			   f_stats_[lab][1][j] /= class_count[lab];
-			   f_stats_[lab][2][j] = 1.0 / sqrt(2 * M_PI * f_stats_[lab][1][j]); // 1/sqrt(2*PI*var)
-				
-		}	
-	}
+		}
+      
+		// transforming f_stats 0 sum into mean	
+		#pragma omp for collapse(2)
+		for (auto lab =0 ; lab< labels_list_.size();++lab) {
+			for (auto j = 0; j < features_count_; j++) {
+				f_stats_[lab][0][j] /= class_count[lab];
+				if(j==0)
+				   p_class_[lab] = class_count[lab] * 1.0 / labels.size();
+			}
+			
+		}
+		
+		#pragma omp for collapse(2)
+		for (j = 0; j < features_count_; j++) {
+		for (lab = 0; lab < labels_list_.size(); lab++) {
+				 
+					for (l = 0; l < lfm[lab].size(); l++) {
+						
 
+						  f_stats_[lab][1][j] += pow(lfm[lab][l][j] - f_stats_[lab][0][j], 2);
+					
+					}
+					   f_stats_[lab][1][j] /= class_count[lab];
+					   f_stats_[lab][2][j] = 1.0 / sqrt(2 * M_PI * f_stats_[lab][1][j]); // 1/sqrt(2*PI*var)
+						
+				}	
+			}
+		
+	}
+		
+	
 }
 
 int GaussianNB::predict(vector<vector<double>> X_test, vector<int> Y_test)
@@ -134,155 +138,6 @@ int GaussianNB::predict(vector<vector<double>> X_test, vector<int> Y_test)
 	return score;
 }
 
-// ******************************** Multinomial Navie Bayes************************************************
-
-// /*
-MultionomialGB::MultionomialGB() {
-
-}
-
-MultionomialGB::~MultionomialGB() {}
-
-void MultionomialGB::train(vector<vector<double>> train, vector<int> label)
-{
-
-	//calculate multinomial_sums to find mean and variance
-
-	double flag;
-	double alpha = 1.0;
-	// Decision rule
-	//int decision = 1;
-	// Verbose
-	//int verbose = 0;
-	cout << "Inside train " << endl;
-	int labels;
-		//#pragma omp parallel
-	for (auto i = 0; i < train.size(); i++)
-	{
-		labels = label[i];
-		vector<double> values;
-		//cout << "lables" << labels << endl;
-		for (auto l = 1; l < train[0].size(); l++)
-		{
-			flag = train[i][l];
-			//cout << "flag" << flag << endl;
-			values.push_back(flag);
-			//cout << "train 0 size" << train[0].size() << endl;
-			if (sum_x.find(labels) == sum_x.end()) {
-				vector<double> empty;
-				for (unsigned int j = 1; j < train[0].size(); j++) {
-					empty.push_back(0.0);
-				}
-				sum_x[labels] = empty;
-			}
-
-			sum_x[labels][l - 1] += values[l - 1];
-			multinomial_sums[labels] += values[l - 1];
-			//cout << values.size() << endl;
-			//cout << sum_x[labels].size() << endl;
-
-			data[labels].push_back(values);
-			n[labels]++;
-			n_total++;
-
-		}
-	}
-
-	cout << "sum x cal over" << endl;
-
-	for (auto it = sum_x.begin(); it != sum_x.end(); it++) {
-
-		priors[it->first] = (double)n[it->first] / n_total;
-
-		if (it->first > 0) {
-			cout<<"class +%i prior: %1.3f\n" <<it->first<<priors[it->first];
-		}
-		else {
-			cout<<"class %i prior: %1.3f\n"<< it->first<<priors[it->first];
-		}
-		cout << "feature\tmean\tvar\tstddev\tmnl" << endl;
-
-		// Calculate means
-		vector<double> feature_means;
-		for (unsigned int i = 0; i < it->second.size(); i++) {
-			feature_means.push_back(sum_x[it->first][i] / n[it->first]);
-		}
-
-		// Calculate variances
-		vector<double> feature_variances(feature_means.size());
-		for (unsigned int i = 0; i < data[it->first].size(); i++) {
-			for (unsigned int j = 0; j < data[it->first][i].size(); j++) {
-				feature_variances[j] += (data[it->first][i][j] - feature_means[j]) * (data[it->first][i][j] - feature_means[j]);
-			}
-		}
-		for (unsigned int i = 0; i < feature_variances.size(); i++) {
-			feature_variances[i] /= data[it->first].size();
-		}
-
-		// Calculate multinomial likelihoods
-		for (unsigned int i = 0; i < feature_means.size(); i++) {
-			double mnl = (sum_x[it->first][i] + alpha) / (multinomial_sums[it->first] + (alpha * feature_means.size()));
-			//cout << sum_x[it->first][i] << " + 1 / " << multinomial_sums[it->first] << " + " << feature_means.size() << endl;
-			multinomial_likelihoods[it->first].push_back(mnl);
-		}
-
-		for (unsigned int i = 0; i < feature_means.size(); i++) {
-			printf("%i\t%2.3f\t%2.3f\t%2.3f\t%2.3f\n", i + 1, feature_means[i], feature_variances[i], sqrt(feature_variances[i]), multinomial_likelihoods[it->first][i]);
-			//cout << feature_means[i] << "\t" << sqrt(feature_variances[i]) << endl;
-		}
-		means[it->first] = feature_means;
-		variances[it->first] = feature_variances;
-
-	}
-
-	cout << "training over" << endl;
-
-}
-
-int MultionomialGB::predict(vector<vector<double>> X_test, vector<int> Y_test)
-{
-
-	map <string, double> p;
-
-	int result;
-	int score=1;
-
-	cout << "inside prediction" << endl;
-	for (auto i = 0; i < X_test.size(); i++)
-	{
-		vector<double> vec = X_test[i];
-
-		//assert(features_count_ == vec.size());
-
-
-		double max = 0;
-
-
-		for (auto it = priors.begin(); it != priors.end(); it++) {
-			double numer = priors[it->first];
-			for (auto j = 0; j < features_count_; j++) {
-				numer *= pow(multinomial_likelihoods[it->first][j], vec[j]);
-			}
-
-			if (max < numer) {
-				max = numer;
-				result = it->first;
-			}
-		}
-
-				//#pragma omp critical
-
-		if (result==Y_test[i])
-		{
-			score += 1;
-		}
-	}
-
-	return score;
-
-
-}
-// */
 
 // ******************************** Bernoulli Naive Bayes ********************/
 
@@ -451,9 +306,8 @@ void MultinomialNB::train(vector<vector<double>> data, vector<int> labels) {
 			// TODO: Use stl transform for this
 			for (unsigned int j = 0; j < n_features_; ++j) {
 				// Conditional probs with laplacian smoothing
-				feature_probs_[i][j] = ((double)feature_probs_[labels[i]][j] + alpha) / \
-				((double)(feat_count_[i] + vocab_size));
-
+				feature_probs_[i][j] =  log(((double)feature_probs_[labels[i]][j] + alpha) / ((double)(feat_count_[i] + vocab_size))+1);
+				//cout<<"feature_probs_[i][j]  "<<feature_probs_[i][j] <<endl;
 				if(j==0)
 					class_priors_[i] = (double)class_count_[i] / train_size;
 			}
@@ -482,30 +336,33 @@ int MultinomialNB::predict(vector<vector<double>> X_test, vector<int> Y_test) {
 	map <int, double> prob_class;
 
 	/* For each example in the test set */
-	#pragma omp parallel 
+	#pragma omp parallel num_threads(1)
 	{
 		#pragma omp for
 		for (i = 0; i < test_size; ++i) {
 			vector<double> test_vec = X_test[i];
+			map <int, double> prob_class;
 			double max = 0.0;
-			float prob=0;
+			
 			/* For each class.
 			Note that labels_list_ is populated in the train function */
 			for (lab = 0; lab < n_labels; ++lab) {
-				prob = class_priors_[lab];
-				/* For each feature */
+				
+				prob_class[lab]= log(class_priors_[lab]);
+				
 				for (feat = 0; feat < n_features_; ++feat) {
-				// TODO: Use a reduction technique here
-				prob *= pow(feature_probs_[lab][feat], test_vec[feat]);
+								
+				prob_class[lab]+= (double)((feature_probs_[lab][feat])*(double)(test_vec[feat]));
+				
 				}
-
-				#pragma omp critical 
-				prob_class[lab] = prob;
-				if (max < prob_class[lab]) {
+				cout<<" prob_class[lab] "<<prob_class[lab]<<endl;
+				if (max < (prob_class[lab])) {
 					max = prob_class[lab];
 					result = lab;
+					cout<<"chnged"<<endl;
 				}
 			}
+			
 			#pragma omp critical
 			if (result == Y_test[i]) {
 				score += 1;
@@ -521,7 +378,7 @@ ComplementNB::ComplementNB() {}
 
 ComplementNB::~ComplementNB() {}
 
-/* DOUBT: No priors required?
+/* 
 Implementation reference:
 https://scikit-learn.org/stable/modules/naive_bayes.html#complement-naive-bayes
 */
@@ -621,14 +478,7 @@ void ComplementNB::train(vector<vector<double>> data, vector<int> labels) {
 		This supposedly alleviates class imbalance */ 
 		#pragma omp for collapse(2)
 		for (unsigned int i = 0; i < n_unique_labels; ++i) { /* For each class */
-			
-			//transform (feature_weights_[i].begin (), feature_weights_[i].end(), feature_weights_[i].begin(),bind1st(multiplies <double> () , 1/den_sum))) ;
-			//transform(feature_weights_[i].begin(), feature_weights_[i].end(),bind2nd(divides<double>,1/den_sum));
-			//transform(feature_weights_[i].begin(), feature_weights_[i].end(), feature_weights_[i].begin(), 1/den_sum);			
-			//std::transform(feature_weights_[i].begin(), feature_weights_[i].end(), feature_weights_[i].begin(),std::bind(std::multiplies<double>(), std::placeholders::_1,den_sum));
-			
-																			// feature_weights_[i].end(), 0.0);
-
+		
 		// TODO: Use stl transform for this, this is super inefficient
 		for (unsigned int j = 0; j < n_features_; ++j) { /* For each feature */
 			if(j=0)
