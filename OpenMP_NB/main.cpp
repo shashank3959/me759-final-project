@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
   3: MultinomialNB
   4: ComplementNB
   */
-  int algoID = atoi(argv[1]);
+  int algoID = 3;
   /*
   if (string(argv[i]) == "-d") {
           algoID = atoi(argv[i + 1]);
@@ -75,6 +75,7 @@ int main(int argc, char *argv[]) {
   */
   high_resolution_clock::time_point start;
   high_resolution_clock::time_point end;
+  duration<double, std::milli> duration_sec;
 
   vector<vector<double>> X_train;
   vector<vector<double>> X_test;
@@ -137,11 +138,11 @@ int main(int argc, char *argv[]) {
 
   cout << "X_test number of elements " << X_test.size() << endl;
   cout << "X_test element size " << X_test[0].size() << endl;
-  cout << "Y_test number of elements " << Y_test.size() << endl << endl;
-
+  cout << "Y_test number of elements " << Y_test.size() << endl << endl; 
+  float tt=0;
   /* TODO: Remove code duplication below */
   if (algoID == 0) {
-    duration<double, std::milli> duration_sec;
+    
     start = high_resolution_clock::now();
     cout << "calling GaussianNB" << endl;
     GaussianNB model = GaussianNB();
@@ -156,7 +157,7 @@ int main(int argc, char *argv[]) {
     int score = 0;
     score = model.predict(X_test, Y_test);
 
-    float fraction_correct = float(score) / Y_test.size();
+    double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
   } else if (algoID == 1) {
@@ -168,45 +169,76 @@ int main(int argc, char *argv[]) {
 
     score = model.predict(X_test, Y_test);
 
-    float fraction_correct = float(score) / Y_test.size();
+    double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
   } else if (algoID == 2) {
     /* BernoulliNB */
     cout<<"Training a Bernoulli NB classifier"<<endl;
-
     BernoulliNB model = BernoulliNB();
+    for(int i=0;i<10;i++)
+   {
+   start = high_resolution_clock::now();
+
     model.train(X_train, Y_train);
 
+    end = high_resolution_clock::now();
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    tt+=duration_sec.count();
+    //cout << "training time " << duration_sec.count() << endl;
+  } 
+    cout << "training time " << tt/10<< endl;
     int score = 0;
 
     score = model.predict(X_test, Y_test);
 
-    float fraction_correct = float(score) / Y_test.size();
+    double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
   } else if (algoID == 3) {
     /* MultinomialNB */
     cout<<"Training a Multinomial NB classifier"<<endl;
     MultinomialNB model = MultinomialNB();
+    for(int i=0;i<10;i++)
+   {
+    start = high_resolution_clock::now();
     model.train(X_train, Y_train);
+    end = high_resolution_clock::now();
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+  
+    tt+=duration_sec.count();
+    //cout << "training time " << duration_sec.count() << endl;
+   } 
+    cout << "training time " << tt/10<< endl;
 
     int score = 0;
 
     score = model.predict(X_test, Y_test);
 
-    float fraction_correct = float(score) / Y_test.size();
+    double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
   } else if (algoID == 4) {
     /* ComplementNB */
     cout<<"Training a ComplementNB classifier"<<endl;
     ComplementNB model = ComplementNB();
+    for(int i=0;i<10;i++)
+   {
+    start = high_resolution_clock::now();
+    
+
     model.train(X_train, Y_train);
+    end = high_resolution_clock::now();
+   duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+	
+    tt+=duration_sec.count();
+    //cout << "training time " << duration_sec.count() << endl;
+  } 
+    cout << "training time " << tt/10<< endl;
 
     int score = 0;
 
     score = model.predict(X_test, Y_test);
 
-    float fraction_correct = float(score) / Y_test.size();
+    double fraction_correct = double(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
   }
 
