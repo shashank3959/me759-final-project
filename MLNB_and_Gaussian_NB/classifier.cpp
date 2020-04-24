@@ -8,7 +8,6 @@
 #include <algorithm>
 #include "classifier.h"
 using namespace std;
-#define M_PI 3.14159265359
 
 GaussianNB::GaussianNB() {
 
