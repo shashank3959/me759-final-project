@@ -52,6 +52,7 @@ __global__ void LearnKernel(double *feature_probs, double *class_priors,
 		if (feat_col < n_features_) { /* End condition check */
 			/* For each label */
 			for (i = 0; i < n_classes_; ++i) {
+				// TODO: Add Laplace Smoothing
 				feature_probs[RM_Index(i, feat_col, n_features_)] =
 				log (feature_probs[RM_Index(i, feat_col, n_features_)] / d_row_sums[i]);
 
@@ -123,9 +124,77 @@ void MultinomialNB::train(vector<double> data, vector<int> labels) {
 	LearnKernel<<<blocks_per_grid, threads_per_block>>>(feature_probs, class_priors,
 		d_row_sums, train_size, n_classes_, n_features_);
 
+	return;
+	}
+
+
+__global__ void TestKernel(const double *d_data, const int *d_labels,
+	const double *feature_probs, const double *class_priors, int test_size,
+	int n_classes_, int n_features_, int *score) {
+		/* Each thread will take one term */
+		unsigned int tidx = threadIdx.x;
+		unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
+		unsigned int i = 0, j = 0;
+		double prob_class = 0;
+		int max = 0;
+		int result = 0;
+
+
+		if (sample_num < test_size) {
+			for (i = 0; i < n_classes_; ++i) { /* For each class */
+				prob_class = class_priors[i];
+
+				for (j=0; j < n_features_; ++j) { /* For each feature */
+					prob_class += (d_data[RM_Index(sample_num, j, n_features_)] *
+												feature_probs[RM_Index(i, j, n_features_)]);
+				}
+
+				if (max < prob_class) {
+					max = prob_class;
+					result = i;
+				}
+			}
+
+			if (result == d_labels[sample_num]) {
+				score[sample_num] = 1;
+			} else {
+				score[sample_num] = 0;
+			}
+		}
+
+		return;
 	}
 
 
 int MultinomialNB::predict(vector<double> data, vector<int>  labels) {
-	return 420;
+	std::vector<int>::size_type test_size = labels.size();
+	int total_score = 0;
+
+	/* Moving test data to the device */
+	double *d_data;
+	cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
+	cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+																												cudaMemcpyHostToDevice);
+	int *d_labels;
+	cudaMallocManaged(&d_labels, test_size * sizeof(int));
+	cudaMemcpy(d_labels, &labels[0], test_size * sizeof(int),
+																												cudaMemcpyHostToDevice);
+
+	/* NOTE: The class priors and conditional probabilities should already
+	be on the device after train */
+
+	/* Score keeper : 0 or 1 corresponding to each test sample */
+	int *score;
+	cudaMallocManaged(&score, test_size * sizeof(int));
+
+	dim3 threads_per_block(THREADS_PER_BLOCK);
+	dim3 blocks_per_grid(ceil(float(test_size) / float(threads_per_block.x)));
+	TestKernel<<<blocks_per_grid, threads_per_block>>>(d_data, d_labels,
+	feature_probs, class_priors, test_size, n_classes_, n_features_, score);
+
+	// Reduce score to a total score using thrust reduction
+	thrust::device_vector<int> temp_vec(score, score + test_size);
+	total_score = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+
+	return total_score;
 }
