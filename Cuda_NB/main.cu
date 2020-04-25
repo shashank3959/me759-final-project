@@ -3,8 +3,8 @@
 #include <iostream>
 #include <map>
 #include <math.h>
-#include <vector>
 #include <omp.h>
+#include <vector>
 
 vector<vector<double>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
@@ -66,7 +66,6 @@ vector<double> Load_State_1D(string file_name, unsigned int &n_rows) {
   return state_out;
 }
 
-
 vector<int> Load_Label(string file_name) {
   ifstream in_label_(file_name.c_str(), ifstream::in);
   vector<int> label_out;
@@ -80,8 +79,6 @@ vector<int> Load_Label(string file_name) {
   }
   return label_out;
 }
-
-
 
 int main(int argc, char *argv[]) {
 
@@ -102,22 +99,22 @@ int main(int argc, char *argv[]) {
   unsigned int n_rows_train;
   unsigned int n_rows_test;
 
-if (algoID == 3) {
-    /* MultinomialNB */
-    #pragma omp parallel sections
-      {
-        #pragma omp section
-        X_train = Load_State_1D("../OpenMP_NB/X_train_bow.csv", n_rows_train);
+  if (algoID == 3) {
+/* MultinomialNB */
+#pragma omp parallel sections
+    {
+#pragma omp section
+      X_train = Load_State_1D("../OpenMP_NB/X_train_bow.csv", n_rows_train);
 
-        #pragma omp section
-        X_test = Load_State_1D("../OpenMP_NB/X_test_bow.csv", n_rows_test);
+#pragma omp section
+      X_test = Load_State_1D("../OpenMP_NB/X_test_bow.csv", n_rows_test);
 
-        #pragma omp section
-        Y_train = Load_Label("../OpenMP_NB/y_train_bow.csv");
+#pragma omp section
+      Y_train = Load_Label("../OpenMP_NB/y_train_bow.csv");
 
-        #pragma omp section
-        Y_test = Load_Label("../OpenMP_NB/y_test_bow.csv");
-      }
+#pragma omp section
+      Y_test = Load_Label("../OpenMP_NB/y_test_bow.csv");
+    }
   }
 
   cout << "X_train number of elements: " << X_train.size() << endl;
@@ -128,10 +125,9 @@ if (algoID == 3) {
 
   unsigned int n_cols = X_train.size() / n_rows_train;
 
-  cout<<"Number of rows:"<<n_rows_train<<endl;
+  cout << "Number of rows:" << n_rows_train << endl;
 
-  cout<<"Number of cols:"<<n_cols<<endl;
-
+  cout << "Number of cols:" << n_cols << endl;
 
   // Timing CUDA events
   cudaEvent_t start, stop;
@@ -142,7 +138,7 @@ if (algoID == 3) {
 
   if (algoID == 3) {
     /* MultinomialNB */
-    cout<<"Training a Multinomial NB classifier"<<endl;
+    cout << "Training a Multinomial NB classifier" << endl;
 
     cudaEventRecord(start);
 
@@ -161,7 +157,7 @@ if (algoID == 3) {
     cout << "You got " << (100 * fraction_correct) << " correct" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: "<<milliseconds << " ms"<<endl;
+    cout << "Time taken: " << milliseconds << " ms" << endl;
   } else {
     cout << "Algo not implemented yet!" << endl;
   }
