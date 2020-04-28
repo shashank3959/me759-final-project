@@ -4,7 +4,7 @@
 #include <map>
 #include <math.h>
 #include <vector>
-#include <omp.h>
+
 
 vector<vector<double>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
   3: MultinomialNB
   4: ComplementNB
   */
-  int algoID = atoi(argv[1]);
+  int algoID = 4;//atoi(argv[1]);
 
   vector<double> X_train;
   vector<double> X_test;
@@ -102,23 +102,37 @@ int main(int argc, char *argv[]) {
   unsigned int n_rows_train;
   unsigned int n_rows_test;
 
-if (algoID == 3) {
+if (algoID == 3 || algoID == 4) {
     /* MultinomialNB */
-    #pragma omp parallel sections
-      {
-        #pragma omp section
-        X_train = Load_State_1D("../OpenMP_NB/X_train_bow.csv", n_rows_train);
+ 
+        X_train = Load_State_1D("X_train_bow.csv", n_rows_train);
 
-        #pragma omp section
-        X_test = Load_State_1D("../OpenMP_NB/X_test_bow.csv", n_rows_test);
+      
+        X_test = Load_State_1D("X_test_bow.csv", n_rows_test);
 
-        #pragma omp section
-        Y_train = Load_Label("../OpenMP_NB/y_train_bow.csv");
+       
+        Y_train = Load_Label("y_train_bow.csv");
 
-        #pragma omp section
-        Y_test = Load_Label("../OpenMP_NB/y_test_bow.csv");
-      }
+        
+        Y_test = Load_Label("y_test_bow.csv");
+    
   }
+else if (algoID == 2) {
+    /* BernoulliNB */
+ 
+        X_train = Load_State_1D("X_train_onehot.csv", n_rows_train);
+
+      
+        X_test = Load_State_1D("X_test_onehot.csv", n_rows_test);
+
+       
+        Y_train = Load_Label("y_train_onehot.csv");
+
+        
+        Y_test = Load_Label("y_test_onehot.csv");
+    
+  }
+
 
   cout << "X_train number of elements: " << X_train.size() << endl;
   cout << "Y_train number of elements: " << Y_train.size() << endl << endl;
@@ -162,9 +176,61 @@ if (algoID == 3) {
 
     // Prints the time taken to run the code in ms
     cout << "Time taken: "<<milliseconds << " ms"<<endl;
-  } else {
-    cout << "Algo not implemented yet!" << endl;
+  } 
+
+else if (algoID ==2){
+    // BernoulliNB 
+     
+    cout<<"Training a BernoulliNB NB classifier"<<endl;
+
+    cudaEventRecord(start);
+
+    BernoulliNB model = BernoulliNB();
+    model.train(X_train, Y_train);
+
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+
+    // Prints the time taken to run the code in ms
+    cout << "Time taken: "<<milliseconds << " ms"<<endl;
+
+    
   }
+  else if (algoID ==4){
+    // ComplementNB  
+     
+    cout<<"Training a ComplementNB  NB classifier"<<endl;
+
+    cudaEventRecord(start);
+
+    ComplementNB  model = ComplementNB ();
+    model.train(X_train, Y_train);
+    cout<<"back to main"<<endl;
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+
+    // Prints the time taken to run the code in ms
+    cout << "Time taken: "<<milliseconds << " ms"<<endl;
+
+    
+  }
+
 
   return 0;
 }
