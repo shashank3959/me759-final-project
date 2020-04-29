@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import os
 import re
+import sys 
 import argparse
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
@@ -101,7 +102,7 @@ def save_file(cleaned_train,cleaned_test,target,ID):
 		y_test_df = pd.DataFrame(data={"col1": y_val})
 		y_test_df.to_csv("./data/y_test_onehot.csv", sep=',',index=False, header=False)
 
-	elif ID== "3" or ID =="4"
+	elif ID== "3" or ID =="4":
 		# Binary = False will make sure counts show up
 		cvw = CountVectorizer(binary=False, max_features=3000)
 		cvw.fit(cleaned_train)
@@ -133,7 +134,6 @@ if __name__=="__main__":
 	parser.add_argument("--algoID", help="choose naive_bayes algorithm variant")
 	args = parser.parse_args()
 
-	train_data,test_data,target = cleanData()
 
 	if args.algoID== "2" or args.algoID== "3" or args.algoID== "4":
 		save_file(train_data,test_data,target,args.algoID)
@@ -141,6 +141,9 @@ if __name__=="__main__":
 		print("Invalid algoID")
 		sys.exit()
 	
+
+	train_data,test_data,target = cleanData()
+
 	print("Successfully preprocessed the movie reviews")
 
 
