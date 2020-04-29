@@ -18,7 +18,25 @@ using namespace std;
 #include <thrust/reduce.h>
 
 
+class GaussianNB {
+public:
 
+	double *p_class_;
+	double *f_stats_; // 0 - mean; 1 - var
+	double *labels_list_;
+	double *f_stats_;
+	int *class_count;
+	unsigned int features_count_=1;
+
+	GaussianNB();
+
+	virtual ~GaussianNB();
+
+	void train(vector<double> data, vector<int>  labels);
+
+	int predict(vector<double> data, vector<int>  labels);
+
+};
 
 class MultinomialNB {
 
