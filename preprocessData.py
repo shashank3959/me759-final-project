@@ -135,8 +135,11 @@ if __name__=="__main__":
 
 	train_data,test_data,target = cleanData()
 
-	if args.algoID== "1" or args.algoID== "2":
+	if args.algoID== "2" or args.algoID== "3" or args.algoID== "4":
 		save_file(train_data,test_data,target,args.algoID)
+	else:
+		print("Invalid algoID")
+		sys.exit()
 	
 	print("Successfully preprocessed the movie reviews")
 
