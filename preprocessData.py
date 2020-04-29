@@ -69,24 +69,23 @@ def cleanData():
 
 	cleaned_train = remove_stop_words_stemmer(reviews_train_clean)
 	cleaned_test = remove_stop_words_stemmer(reviews_test_clean)
-		
-	return cleaned_train,cleaned_train,target
+	data = cleaned_test + cleaned_train
+	return data,target
 
 
-def save_file(cleaned_train,cleaned_test,target,ID):
+def save_file(X,target,ID):
 
 	if not os.path.exists('data'):
 		os.makedirs('data')	
 
 	if ID== "2":
 		cvb = CountVectorizer(binary=True,max_features=3000)
-		cvb.fit(cleaned_train)
-		X = cvb.transform(cleaned_train)
-		X_test = cvb.transform(cleaned_test)
-
+		cvb.fit(X)
+		X = cvb.transform(X)
+	
 		# Test - Validation Split 75 % training and 25% testing 
 		X_train, X_val, y_train, y_val = train_test_split(
-		    X, target, train_size = 0.75, random_state=seed
+		    X, target, train_size = 0.9, random_state=seed
 		)
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
@@ -105,13 +104,12 @@ def save_file(cleaned_train,cleaned_test,target,ID):
 	elif ID== "3" or ID =="4":
 		# Binary = False will make sure counts show up
 		cvw = CountVectorizer(binary=False, max_features=3000)
-		cvw.fit(cleaned_train)
-		X = cvw.transform(cleaned_train)
-		X_test = cvw.transform(cleaned_test)
-
-		# Test - Validation Split 
+		cvw.fit(X)
+		X = cvw.transform(X)
+	
+		# Test - Validation Split 75 % training and 25% testing 
 		X_train, X_val, y_train, y_val = train_test_split(
-		    X, target, train_size = 0.75, random_state=seed
+		    X, target, train_size = 0.9, random_state=seed
 		)
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
@@ -134,10 +132,9 @@ if __name__=="__main__":
 	parser.add_argument("--algoID", help="choose naive_bayes algorithm variant")
 	args = parser.parse_args()
 
-
 	if args.algoID== "2" or args.algoID== "3" or args.algoID== "4":
-		save_file(train_data,test_data,target,args.algoID)
-		train_data,test_data,target = cleanData()
+		X,target = cleanData()
+		save_file(X,target,args.algoID)
 	else:
 		print("Invalid algoID")
 		sys.exit()
