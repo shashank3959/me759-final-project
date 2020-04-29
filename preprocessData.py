@@ -1,7 +1,6 @@
 '''
   Command to run the script: python preprocessData.py --algoID 1  
   Choose algoID
-  1 for GaussianNB
   2 for MultinomialNB
   3 for BernoulliNB
   4 for ComplementNB
@@ -75,7 +74,10 @@ def cleanData():
 
 def save_file(cleaned_train,cleaned_test,target,ID):
 
-	if ID== "1":
+	if not os.path.exists('data'):
+		os.makedirs('data')	
+
+	if ID== "2":
 		cvb = CountVectorizer(binary=True,max_features=3000)
 		cvb.fit(cleaned_train)
 		X = cvb.transform(cleaned_train)
@@ -88,18 +90,18 @@ def save_file(cleaned_train,cleaned_test,target,ID):
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
 		x = pd.DataFrame.sparse.from_spmatrix(X_val)
-		x.to_csv('./X_test_onehot.csv',index=False, header=False)
+		x.to_csv('./data/X_test_onehot.csv',index=False, header=False)
 
 		x = pd.DataFrame.sparse.from_spmatrix(X_train)
-		x.to_csv('./X_train_onehot.csv',index=False, header=False)
+		x.to_csv('./data/X_train_onehot.csv',index=False, header=False)
 
 		y_train_df = pd.DataFrame(data={"col1": y_train})
-		y_train_df.to_csv("./y_train_onehot.csv", sep=',',index=False, header=False)
+		y_train_df.to_csv("./data/y_train_onehot.csv", sep=',',index=False, header=False)
 
 		y_test_df = pd.DataFrame(data={"col1": y_val})
-		y_test_df.to_csv("./y_test_onehot.csv", sep=',',index=False, header=False)
+		y_test_df.to_csv("./data/y_test_onehot.csv", sep=',',index=False, header=False)
 
-	elif ID== "2":
+	elif ID== "3" or ID =="4"
 		# Binary = False will make sure counts show up
 		cvw = CountVectorizer(binary=False, max_features=3000)
 		cvw.fit(cleaned_train)
@@ -113,16 +115,16 @@ def save_file(cleaned_train,cleaned_test,target,ID):
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
 		x = pd.DataFrame.sparse.from_spmatrix(X_val)
-		x.to_csv('./X_test_bow.csv',index=False, header=False)
+		x.to_csv('./data/X_test_bow.csv',index=False, header=False)
 
 		x = pd.DataFrame.sparse.from_spmatrix(X_train)
-		x.to_csv('./X_train_bow.csv',index=False, header=False)
+		x.to_csv('./data/X_train_bow.csv',index=False, header=False)
 
 		y_train_df = pd.DataFrame(data={"col1": y_train})
-		y_train_df.to_csv("./y_train_bow.csv", sep=',',index=False, header=False)
+		y_train_df.to_csv("./data/y_train_bow.csv", sep=',',index=False, header=False)
 
 		y_test_df = pd.DataFrame(data={"col1": y_val})
-		y_test_df.to_csv("./y_test_bow.csv", sep=',',index=False, header=False)
+		y_test_df.to_csv("./data/y_test_bow.csv", sep=',',index=False, header=False)
 
 
 if __name__=="__main__":
