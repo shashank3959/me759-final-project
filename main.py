@@ -25,10 +25,15 @@ def train_test(ID):
 		
 		#load data
 		print("Loading train and test data")
-		X_train = pd.read_csv("./data/train_states.csv")
-		X_test = pd.read_csv("./data/test_labels.csv")
-		Y_train = np.ravel(pd.read_csv("./data/train_labels.csv"))
-		Y_test = np.ravel(pd.read_csv("./data/test_labels.csv"))
+		try:
+
+			X_train = pd.read_csv("./data/train_states.csv",header=None)
+			X_test = pd.read_csv("./data/test_states.csv",header=None)
+			Y_train = np.ravel(pd.read_csv("./data/train_labels.csv",header=None))
+			Y_test = np.ravel(pd.read_csv("./data/test_labels.csv",header=None))
+		except: 
+			print("File does not exist. Please run preprocessData.py")
+			sys.exit()
 
 		#train model 
 		print("Training models ")
@@ -44,10 +49,16 @@ def train_test(ID):
 
 		#load data
 		print("Loading train and test data")
-		X_train = pd.read_csv("./data/X_train_bow.csv")
-		X_test = pd.read_csv("./data/X_test_bow.csv")
-		Y_train = np.ravel(pd.read_csv("./data/y_train_bow.csv"))
-		Y_test = np.ravel(pd.read_csv("./data/y_test_bow.csv"))
+		try:
+
+			X_train = pd.read_csv("./data/X_train_bow.csv")
+			X_test = pd.read_csv("./data/X_test_bow.csv")
+			Y_train = np.ravel(pd.read_csv("./data/y_train_bow.csv"))
+			Y_test = np.ravel(pd.read_csv("./data/y_test_bow.csv"))
+
+		except: 
+			print("File does not exist. Please run preprocessData.py")
+			sys.exit()
 
 		#train model 
 		print("Training model")
@@ -64,10 +75,15 @@ def train_test(ID):
 
 		#load data
 		print("Loading train and test data")
-		X_train = pd.read_csv("./data/X_train_onehot.csv")
-		X_test = pd.read_csv("./data/X_test_onehot.csv")
-		Y_train = np.ravel(pd.read_csv("./data/y_train_onehot.csv"))
-		Y_test = np.ravel(pd.read_csv("./data/y_test_onehot.csv"))
+		try:
+
+			X_train = pd.read_csv("./data/X_train_onehot.csv")
+			X_test = pd.read_csv("./data/X_test_onehot.csv")
+			Y_train = np.ravel(pd.read_csv("./data/y_train_onehot.csv"))
+			Y_test = np.ravel(pd.read_csv("./data/y_test_onehot.csv"))
+		except: 
+			print("File does not exist. Please run preprocessData.py")
+			sys.exit()
 
 		#train model 
 		print("Training model")
@@ -83,10 +99,14 @@ def train_test(ID):
 
 		#load data
 		print("Loading train and test data")
-		X_train = pd.read_csv("./data/X_train_bow.csv")
-		X_test = pd.read_csv("./data/X_test_bow.csv")
-		Y_train = np.ravel(pd.read_csv("./data/y_train_bow.csv"))
-		Y_test = np.ravel(pd.read_csv("./data/y_test_bow.csv"))
+		try:
+			X_train = pd.read_csv("./data/X_train_bow.csv")
+			X_test = pd.read_csv("./data/X_test_bow.csv")
+			Y_train = np.ravel(pd.read_csv("./data/y_train_bow.csv"))
+			Y_test = np.ravel(pd.read_csv("./data/y_test_bow.csv"))
+		except: 
+			print("File does not exist. Please run preprocessData.py")
+			sys.exit()
 
 		#train model 
 		print("Training model")

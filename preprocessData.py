@@ -1,6 +1,7 @@
 '''
   Command to run the script: python preprocessData.py --algoID 1  
   Choose algoID
+  1 for GaussianNB
   2 for MultinomialNB
   3 for BernoulliNB
   4 for ComplementNB
@@ -16,7 +17,7 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
-
+from sklearn.datasets import load_iris
 
 # set seed for reproducible results
 seed = 42
@@ -78,6 +79,19 @@ def save_file(X,target,ID):
 	if not os.path.exists('data'):
 		os.makedirs('data')	
 
+	if ID== "1":
+		X, y = load_iris(return_X_y=True)
+	
+		# Test - Validation Split 75 % training and 25% testing 
+		X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+		# Bag of Words: Save to csv (from scipy sparse matrix representation)
+				
+		np.savetxt("./data/test_states.csv", X_test, delimiter=",")
+		np.savetxt("./data/train_states.csv", X_train, delimiter=",")
+		np.savetxt("./data/train_labels.csv", y_train, delimiter=",")
+		np.savetxt("./data/test_labels.csv", y_test, delimiter=",")
+
 	if ID== "2":
 		cvb = CountVectorizer(binary=True,max_features=3000)
 		cvb.fit(X)
@@ -132,9 +146,14 @@ if __name__=="__main__":
 	parser.add_argument("--algoID", help="choose naive_bayes algorithm variant")
 	args = parser.parse_args()
 
-	if args.algoID== "2" or args.algoID== "3" or args.algoID== "4":
-		X,target = cleanData()
-		save_file(X,target,args.algoID)
+	if args.algoID== "1" or "2" or "3" or "4":
+		if args.algoID!= "1":
+			X,target = cleanData()
+			save_file(X,target,args.algoID)
+		else:
+			X,target =[],[]
+			save_file(X,target,args.algoID)
+
 	else:
 		print("Invalid algoID")
 		sys.exit()
