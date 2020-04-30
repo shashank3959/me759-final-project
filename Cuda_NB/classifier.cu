@@ -77,13 +77,13 @@ __global__ void GaussianNBMeanKernel(double *feature_means_, int *class_count_,
   }
 }
 
-// printf("feat_mean at feat_col %d is %lf\n",feat_col,
-// feature_means_[RM_Index(i, feat_col, n_features_)]);
-__global__ void GaussianNBVarKernel(
-    const double *d_data, const int *d_labels, const double *feature_means_,
-    double *feature_vars_, double *feature_coefs_, const int *class_count_,
-    const unsigned int n_samples_, const unsigned int n_classes_,
-    const unsigned int n_features_) {
+__global__ void GaussianNBVarKernel(const double *d_data, const int *d_labels,
+                                    const double *feature_means_,
+                                    double *feature_vars_,
+                                    const int *class_count_,
+                                    const unsigned int n_samples_,
+                                    const unsigned int n_classes_,
+                                    const unsigned int n_features_) {
 
   // Each thread will take care of one feature for all training samples
   unsigned int tidx = threadIdx.x;
@@ -103,9 +103,6 @@ __global__ void GaussianNBVarKernel(
     // Calculate coefficients
     for (i = 0; i < n_classes_; ++i) { /* For each class */
       feature_vars_[RM_Index(i, feat_col, n_features_)] /= class_count_[i];
-      feature_coefs_[RM_Index(i, feat_col, n_features_)] =
-          1.0 /
-          sqrt(2 * M_PI * feature_vars_[RM_Index(i, feat_col, n_features_)]);
     }
   }
 }
@@ -144,8 +141,6 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
                     (n_classes_ * n_features_) * sizeof(double));
   cudaMallocManaged(&feature_vars_,
                     (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&feature_coefs_,
-                    (n_classes_ * n_features_) * sizeof(double));
   cudaMallocManaged(&class_priors_, (n_classes_) * sizeof(double));
   cudaMallocManaged(&class_count_, n_classes_ * sizeof(int));
 
@@ -163,15 +158,89 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
       n_features_);
 
   GaussianNBVarKernel<<<blocks_per_grid, threads_per_block>>>(
-      d_data, d_labels, feature_means_, feature_vars_, feature_coefs_,
-      class_count_, train_size, n_classes_, n_features_);
+      d_data, d_labels, feature_means_, feature_vars_, class_count_, train_size,
+      n_classes_, n_features_);
 
   return;
+}
+
+__global__ void GaussianNBTestKernel(const double *d_data, const int *d_labels,
+                                     const double *feature_means_,
+                                     const double *feature_vars_,
+                                     const double *class_priors_, int test_size,
+                                     int n_classes_, int n_features_,
+                                     int *score) {
+  /* Each thread will take one term */
+  unsigned int tidx = threadIdx.x;
+  unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
+  unsigned int i = 0, j = 0;
+  double prob_class = 0.0;
+  double max = 0;
+  int result = 0;
+  double coefficient = 0.0;
+
+  if (sample_num < test_size) {        /* End condition check */
+    for (i = 0; i < n_classes_; ++i) { /* For each class */
+      prob_class = class_priors_[i];
+
+      for (j = 0; j < n_features_; ++j) { /* For each feature */
+        coefficient =
+            1.0 / sqrt(2 * M_PI * feature_vars_[RM_Index(i, j, n_features_)]);
+        prob_class *= coefficient *
+                      exp(-pow(d_data[RM_Index(sample_num, j, n_features_)] -
+                                   feature_means_[RM_Index(i, j, n_features_)],
+                               2) /
+                          (2 * feature_vars_[RM_Index(i, j, n_features_)]));
+      }
+
+      if (max < prob_class) {
+        max = prob_class;
+        result = i;
+      }
+    }
+
+    if (result == d_labels[sample_num]) {
+      score[sample_num] = 1;
+    } else {
+      score[sample_num] = 0;
+    }
+  }
 }
 
 int GaussianNB::predict(vector<double> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 420;
+
+  /* Moving test data to the device */
+  double *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+             cudaMemcpyHostToDevice);
+  int *d_labels;
+  cudaMallocManaged(&d_labels, test_size * sizeof(int));
+  cudaMemcpy(d_labels, &labels[0], test_size * sizeof(int),
+             cudaMemcpyHostToDevice);
+
+  /* Score keeper : 0 or 1 corresponding to each test sample */
+  int *score;
+  cudaMallocManaged(&score, test_size * sizeof(int));
+
+  // One thread for each test sample
+  dim3 threads_per_block(THREADS_PER_BLOCK);
+  dim3 blocks_per_grid(ceil(float(test_size) / float(threads_per_block.x)));
+
+  GaussianNBTestKernel<<<blocks_per_grid, threads_per_block>>>(
+      d_data, d_labels, feature_means_, feature_vars_, class_priors_, test_size,
+      n_classes_, n_features_, score);
+
+  cudaDeviceSynchronize();
+
+  // Reduce score to a total score using thrust reduction
+  thrust::device_vector<int> temp_vec(score, score + test_size);
+  total_score =
+      thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+
+  cout << "Total score:" << total_score << endl;
 
   return total_score;
 }
@@ -249,7 +318,7 @@ __global__ void MultinomialNBTestKernel(const double *d_data,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   double prob_class = 0;
-  int max = 0;
+  double max = 0;
   int result = 0;
 
   if (sample_num < test_size) {
@@ -273,7 +342,6 @@ __global__ void MultinomialNBTestKernel(const double *d_data,
       score[sample_num] = 0;
     }
   }
-
   return;
 }
 
@@ -451,7 +519,7 @@ __global__ void BernoulliNBTestKernel(const double *d_data, const int *d_labels,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   double prob_class = 0;
-  int max = 0;
+  double max = 0;
   int result = 0;
 
   if (sample_num < test_size) {

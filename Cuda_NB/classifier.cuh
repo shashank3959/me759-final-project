@@ -23,7 +23,6 @@ public:
   unsigned int n_classes_ = 1;  // Number of unique labels
   double *feature_means_;       // Per feature per class means
   double *feature_vars_;        // Per feature per class variances
-  double *feature_coefs_;       // Per feature per class variances
   double *class_priors_;        // shape: n_classes_
   int *class_count_;            // Number of items per class; shape: n_classes_
 
