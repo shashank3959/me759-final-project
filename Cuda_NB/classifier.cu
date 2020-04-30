@@ -209,7 +209,7 @@ __global__ void GaussianNBTestKernel(const double *d_data, const int *d_labels,
 
 int GaussianNB::predict(vector<double> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
-  int total_score = 420;
+  int total_score = 0;
 
   /* Moving test data to the device */
   double *d_data;
@@ -239,8 +239,6 @@ int GaussianNB::predict(vector<double> data, vector<int> labels) {
   thrust::device_vector<int> temp_vec(score, score + test_size);
   total_score =
       thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
-
-  cout << "Total score:" << total_score << endl;
 
   return total_score;
 }
