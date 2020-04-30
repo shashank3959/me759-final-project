@@ -1,10 +1,9 @@
-#include "classifier.h"
+#include "classifier.cuh"
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <math.h>
 #include <vector>
-
 
 vector<vector<double>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
@@ -66,7 +65,6 @@ vector<double> Load_State_1D(string file_name, unsigned int &n_rows) {
   return state_out;
 }
 
-
 vector<int> Load_Label(string file_name) {
   ifstream in_label_(file_name.c_str(), ifstream::in);
   vector<int> label_out;
@@ -81,19 +79,16 @@ vector<int> Load_Label(string file_name) {
   return label_out;
 }
 
-
-
 int main(int argc, char *argv[]) {
 
   /*
   algoID
   0: GaussianNB
-  1: MultionomialGB
-  2: BernoulliNB
-  3: MultinomialNB
-  4: ComplementNB
+  1: BernoulliNB
+  2: MultinomialNB
+  3: ComplementNB
   */
-  int algoID = 4;//atoi(argv[1]);
+  int algoID = atoi(argv[1]);
 
   vector<double> X_train;
   vector<double> X_test;
@@ -102,37 +97,55 @@ int main(int argc, char *argv[]) {
   unsigned int n_rows_train;
   unsigned int n_rows_test;
 
-if (algoID == 3 || algoID == 4) {
-    /* MultinomialNB */
- 
-        X_train = Load_State_1D("X_train_bow.csv", n_rows_train);
+  if (algoID == 0) {
+    /* GaussianNB */
+    #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../OpenMP_NB/train_states.csv", n_rows_train);
 
-      
-        X_test = Load_State_1D("X_test_bow.csv", n_rows_test);
+      #pragma omp section
+      X_test = Load_State_1D("../OpenMP_NB/test_states.csv", n_rows_test);
 
-       
-        Y_train = Load_Label("y_train_bow.csv");
+      #pragma omp section
+      Y_train = Load_Label("../OpenMP_NB/train_labels.csv");
 
-        
-        Y_test = Load_Label("y_test_bow.csv");
-    
-  }
-else if (algoID == 2) {
+      #pragma omp section
+      Y_test = Load_Label("../OpenMP_NB/test_labels.csv");
+    }
+  } else if (algoID == 1) {
     /* BernoulliNB */
- 
-        X_train = Load_State_1D("X_train_onehot.csv", n_rows_train);
+    #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../OpenMP_NB/X_train_onehot.csv", n_rows_train);
 
-      
-        X_test = Load_State_1D("X_test_onehot.csv", n_rows_test);
+      #pragma omp section
+      X_test = Load_State_1D("../OpenMP_NB/X_test_onehot.csv", n_rows_test);
 
-       
-        Y_train = Load_Label("y_train_onehot.csv");
+      #pragma omp section
+      Y_train = Load_Label("../OpenMP_NB/y_train_onehot.csv");
 
-        
-        Y_test = Load_Label("y_test_onehot.csv");
-    
+      #pragma omp section
+      Y_test = Load_Label("../OpenMP_NB/y_test_onehot.csv");
+    }
+  } else if (algoID == 2 || algoID == 3) {
+    /* MultinomialNB  or ComplementNB */
+    #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../OpenMP_NB/X_train_bow.csv", n_rows_train);
+
+      #pragma omp section
+      X_test = Load_State_1D("../OpenMP_NB/X_test_bow.csv", n_rows_test);
+
+      #pragma omp section
+      Y_train = Load_Label("../OpenMP_NB/y_train_bow.csv");
+
+      #pragma omp section
+      Y_test = Load_Label("../OpenMP_NB/y_test_bow.csv");
+    }
   }
-
 
   cout << "X_train number of elements: " << X_train.size() << endl;
   cout << "Y_train number of elements: " << Y_train.size() << endl << endl;
@@ -142,10 +155,9 @@ else if (algoID == 2) {
 
   unsigned int n_cols = X_train.size() / n_rows_train;
 
-  cout<<"Number of rows:"<<n_rows_train<<endl;
+  cout << "Number of rows:" << n_rows_train << endl;
 
-  cout<<"Number of cols:"<<n_cols<<endl;
-
+  cout << "Number of cols:" << n_cols << endl;
 
   // Timing CUDA events
   cudaEvent_t start, stop;
@@ -154,34 +166,23 @@ else if (algoID == 2) {
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
 
-  if (algoID == 3) {
-    /* MultinomialNB */
-    cout<<"Training a Multinomial NB classifier"<<endl;
+  if (algoID == 0) {
+    // GaussianNB
+    cout << "Training a GaussianNB classifier" << endl;
 
-    cudaEventRecord(start);
-
-    MultinomialNB model = MultinomialNB();
+    GaussianNB model = GaussianNB();
     model.train(X_train, Y_train);
 
     int score = 0;
-
     score = model.predict(X_test, Y_test);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
 
-    cudaEventElapsedTime(&milliseconds, start, stop);
+    double fraction_correct = double(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
 
-    float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+  } else if (algoID == 1) {
+    // BernoulliNB
 
-    // Prints the time taken to run the code in ms
-    cout << "Time taken: "<<milliseconds << " ms"<<endl;
-  } 
-
-else if (algoID ==2){
-    // BernoulliNB 
-     
-    cout<<"Training a BernoulliNB NB classifier"<<endl;
+    cout << "Training a BernoulliNB NB classifier" << endl;
 
     cudaEventRecord(start);
 
@@ -197,23 +198,20 @@ else if (algoID ==2){
     cudaEventElapsedTime(&milliseconds, start, stop);
 
     float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: "<<milliseconds << " ms"<<endl;
+    cout << "Time taken: " << milliseconds << " ms" << endl;
 
-    
-  }
-  else if (algoID ==4){
-    // ComplementNB  
-     
-    cout<<"Training a ComplementNB  NB classifier"<<endl;
+  } else if (algoID == 2) {
+    /* MultinomialNB */
+    cout << "Training a Multinomial NB classifier" << endl;
 
     cudaEventRecord(start);
 
-    ComplementNB  model = ComplementNB ();
+    MultinomialNB model = MultinomialNB();
     model.train(X_train, Y_train);
-    cout<<"back to main"<<endl;
+
     int score = 0;
 
     score = model.predict(X_test, Y_test);
@@ -223,14 +221,34 @@ else if (algoID ==2){
     cudaEventElapsedTime(&milliseconds, start, stop);
 
     float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " correct" << endl;
+    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: "<<milliseconds << " ms"<<endl;
+    cout << "Time taken: " << milliseconds << " ms" << endl;
 
-    
+  } else if (algoID == 3) {
+    // ComplementNB
+    cout << "Training a ComplementNB  NB classifier" << endl;
+
+    cudaEventRecord(start);
+
+    ComplementNB model = ComplementNB();
+    model.train(X_train, Y_train);
+    cout << "back to main" << endl;
+    int score = 0;
+
+    score = model.predict(X_test, Y_test);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
+
+    // Prints the time taken to run the code in ms
+    cout << "Time taken: " << milliseconds << " ms" << endl;
   }
-
 
   return 0;
 }

@@ -1,4 +1,4 @@
-#include "classifier.h"
+#include "classifier.cuh"
 #include <algorithm>
 #include <assert.h>
 #include <functional>
@@ -22,134 +22,92 @@ GaussianNB::GaussianNB() {}
 
 GaussianNB::~GaussianNB() {}
 
-__global__ void GaussianNBCalcKernel(const double *d_data, const int *d_labels,
-                                     double *f_stats_, int *class_count,
-                                     unsigned int n_samples_,
-                                     unsigned int n_classes_,
-                                     unsigned int n_features_) {
+__global__ void GaussianNBSumKernel(const double *d_data, const int *d_labels,
+                                    double *feature_means_, int *class_count_,
+                                    unsigned int n_samples_,
+                                    unsigned int n_classes_,
+                                    unsigned int n_features_) {
 
-  // Each thread will take care of one term for all docs
+  // Each thread will take care of one feature for all training samples
   unsigned int tidx = threadIdx.x;
   unsigned int feat_col = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, row = 0;
 
   if (feat_col < n_features_) { /* End condition check */
 
-    /* For each document / sample */
-    for (i = 0; i < n_samples_; ++i) {
+    for (i = 0; i < n_samples_; ++i) { /* For each training sample */
       row = d_labels[i];
 
       // No race condition since each thread deals with one feature only
-      f_stats_[RM_Index(row, feat_col, n_features_)] +=
+      feature_means_[RM_Index(row, feat_col, n_features_)] +=
           d_data[RM_Index(i, feat_col, n_features_)];
 
-      // WARNING: thread divergence :(
+      // WARNING: thread divergence :/
       if (feat_col == 0) {
-        class_count[row] += 1;
+        class_count_[row] += 1;
       }
     }
   }
   return;
 }
 
-/* Kernel divides each row by a class count and takes pow */
-__global__ void
-GaussianNBLearnKernel(double *feature_probs, double *f_stats_, int *class_count,
-                      const double *d_row_sums, unsigned int n_samples_,
-                      unsigned int n_classes_, unsigned int n_features_) {
-
-  /* Each thread will take one term */
-  unsigned int tidx = threadIdx.x;
-  unsigned int feat_col = tidx + (blockIdx.x * blockDim.x);
-  unsigned int i = 0;
-
-  if (feat_col < n_features_) { /* End condition check */
-    /* For each label */
-    for (i = 0; i < n_classes_; ++i) {
-      // TODO: Add Laplace Smoothing
-                                f_stats_[RM_Index(i, feat_col, n_features_)] /= class_count[i]);
-
-                                if (feat_col == 0) {
-                                  feature_probs[i] =
-                                      class_count[i] * 1 / (double)(n_samples_);
-                                }
-    }
-  }
-}
-
-// kernel to find prob
-
-__global__ void GaussianNBProbKernel(double *feature_probs,
-                                     double *class_priors, const double *d_data,
+__global__ void GaussianNBMeanKernel(double *feature_means_, int *class_count_,
+                                     double *class_priors_,
                                      unsigned int n_samples_,
                                      unsigned int n_classes_,
                                      unsigned int n_features_) {
 
-  /* Each thread will take one term */
+  // Each thread will take care of one feature for all training samples
   unsigned int tidx = threadIdx.x;
   unsigned int feat_col = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0;
 
   if (feat_col < n_features_) { /* End condition check */
-    /* For each label */
-    for (i = 0; i < n_classes_; ++i) {
-      // TODO: Add Laplace Smoothing + check indexing once
-      feature_probs[RM_Index(i, feat_col, n_features_)] +=
-          pow(lfm[RM_Index(i, feat_col, n_features_)] -
-                  f_stats_[RM_Index(row, feat_col, n_features_)],
-              2);
 
+    /* Calculate Means */
+    for (i = 0; i < n_classes_; ++i) { /* For each class */
+      feature_means_[RM_Index(i, feat_col, n_features_)] /= class_count_[i];
+
+      // WARNING: thread divergence
+      // Calculating Class priors
       if (feat_col == 0) {
-        // TODO: Change index of f_stats_ or introduce new variable for
-        // 1/(sqrt() term to avoid indexing issue
-        f_stats_[RM_Index(i, feat_col, n_features_)] /= class_count[i];
-        f_stats_[RM_Index(i, feat_col, n_features_)] =
-            1.0 /
-            sqrt(2 * M_PI * feature_probs[RM_Index(i, feat_col, n_features_)]);
+        class_priors_[i] = (double)class_count_[i] / n_samples_;
       }
     }
   }
 }
 
-__global__ void GaussianNBTestKernel(const double *d_data, const int *d_labels,
-                                     const double *feature_probs,
-                                     const double *class_priors, int test_size,
-                                     int n_classes_, int n_features_,
-                                     int *score) {
-  /* Each thread will take one term */
+// printf("feat_mean at feat_col %d is %lf\n",feat_col,
+// feature_means_[RM_Index(i, feat_col, n_features_)]);
+__global__ void GaussianNBVarKernel(
+    const double *d_data, const int *d_labels, const double *feature_means_,
+    double *feature_vars_, double *feature_coefs_, const int *class_count_,
+    const unsigned int n_samples_, const unsigned int n_classes_,
+    const unsigned int n_features_) {
+
+  // Each thread will take care of one feature for all training samples
   unsigned int tidx = threadIdx.x;
-  unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
-  unsigned int i = 0, j = 0;
-  double prob_class = 0;
-  int max = 0;
-  int result = 0;
+  unsigned int feat_col = tidx + (blockIdx.x * blockDim.x);
+  unsigned int i = 0, row = 0;
 
-  if (sample_num < test_size) {
-    for (i = 0; i < n_classes_; ++i) { /* For each class */
-      prob_class = class_priors[i];
-
-      for (j = 0; j < n_features_; ++j) { /* For each feature */
-        // reference: p[lab] *= f_stats_[lab][2][i] * exp(-pow(vec[i] -
-        // f_stats_[lab][0][i], 2) / (2 * f_stats_[lab][1][i]));
-        // TODO: change indexing of f_stats
-                                        prob_class *= (f_stats_[RM_Index(sample_num, j, n_features_)] *exp(-pow(d_data[RM_Index(sample_num, j, n_features_)] - \
-						       feature_probs[RM_Index(i, j, n_features_)],2) / f_stats_[RM_Index(sample_num, j, n_features_)]
-      }
-
-      if (max < prob_class) {
-        max = prob_class;
-        result = i;
-      }
+  // Calculate variances
+  if (feat_col < n_features_) {        /* End condition check */
+    for (i = 0; i < n_samples_; ++i) { /* For each sample */
+      row = d_labels[i];
+      feature_vars_[RM_Index(row, feat_col, n_features_)] +=
+          pow(d_data[RM_Index(i, feat_col, n_features_)] -
+                  feature_means_[RM_Index(row, feat_col, n_features_)],
+              2);
     }
 
-    if (result == d_labels[sample_num]) {
-      score[sample_num] = 1;
-    } else {
-      score[sample_num] = 0;
+    // Calculate coefficients
+    for (i = 0; i < n_classes_; ++i) { /* For each class */
+      feature_vars_[RM_Index(i, feat_col, n_features_)] /= class_count_[i];
+      feature_coefs_[RM_Index(i, feat_col, n_features_)] =
+          1.0 /
+          sqrt(2 * M_PI * feature_vars_[RM_Index(i, feat_col, n_features_)]);
     }
   }
-
-  return;
 }
 
 void GaussianNB::train(vector<double> data, vector<int> labels) {
@@ -170,12 +128,11 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
              cudaMemcpyHostToDevice);
 
   // Use thrust to find unique labels -- declare a thrust label list
-  // WARNING: is it really worth it to sort in thrust?
   thrust::device_vector<int> thr_label_list(d_labels, d_labels + train_size);
   thrust::sort(thr_label_list.begin(), thr_label_list.end());
   auto new_last = thrust::unique(thr_label_list.begin(), thr_label_list.end());
   thr_label_list.erase(new_last, thr_label_list.end());
-  n_classes_ = new_last - thr_label_list.begin();
+  n_classes_ = new_last - thr_label_list.begin(); // number of unique classes
 
   int *d_label_list;
   cudaMallocManaged(&d_label_list, n_classes_ * sizeof(int));
@@ -183,82 +140,38 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
              n_classes_ * sizeof(int), cudaMemcpyHostToDevice);
 
   /* Other initializations */
-  cudaMallocManaged(&f_stats_, (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&feature_probs, n_classes_ * sizeof(double));
-  cudaMallocManaged(&class_count, n_classes_ * sizeof(int));
-  // Is the memset below required?
-  // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(double));
+  cudaMallocManaged(&feature_means_,
+                    (n_classes_ * n_features_) * sizeof(double));
+  cudaMallocManaged(&feature_vars_,
+                    (n_classes_ * n_features_) * sizeof(double));
+  cudaMallocManaged(&feature_coefs_,
+                    (n_classes_ * n_features_) * sizeof(double));
+  cudaMallocManaged(&class_priors_, (n_classes_) * sizeof(double));
+  cudaMallocManaged(&class_count_, n_classes_ * sizeof(int));
 
-  /* Calculate frequency of occurence of each term : CalcKernel
-  Individual thread for each term. Threads_per_block=1024 */
+  /* Calculate the mean for each feature for each class
+  Individual thread for each feature. Threads_per_block=1024 */
   dim3 threads_per_block(THREADS_PER_BLOCK);
   dim3 blocks_per_grid(ceil(float(n_features_) / float(threads_per_block.x)));
-  GaussianNBCalcKernel<<<blocks_per_grid, threads_per_block>>>(
-      d_data, d_labels, f_stats_, class_count, train_size, n_classes_,
+
+  GaussianNBSumKernel<<<blocks_per_grid, threads_per_block>>>(
+      d_data, d_labels, feature_means_, class_count_, train_size, n_classes_,
       n_features_);
-  cudaDeviceSynchronize();
 
-  /* Learning Phase: Calculate conditional probabilities */
-  double *lfm;
-  cudaMallocManaged(&lfm, n_classes_ * sizeof(double));
-
-  /* Find total number of terms in each class */
-  for (unsigned int i = 0; i < n_classes_; ++i) {
-    thrust::device_vector<double> temp_vec(f_stats_ + (n_features_ * i),
-                                           f_stats_ + (n_features_ * (i + 1)));
-    lfm[i] = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
-  }
-
-  thrust::device_vector<double> temp_vec(d_row_sums, (d_row_sums + n_classes_));
-
-  GaussianNBLearnKernel<<<blocks_per_grid, threads_per_block>>>(
-      f_stats_, feature_probs, class_count, lfm, train_size, n_classes_,
+  GaussianNBMeanKernel<<<blocks_per_grid, threads_per_block>>>(
+      feature_means_, class_count_, class_priors_, train_size, n_classes_,
       n_features_);
-  cudaDeviceSynchronize();
 
-  // prob kernel
-
-  GaussianNBProbKernel<<<blocks_per_grid, threads_per_block>>>(
-      feature_probs, class_priors, *d_data, n_samples_, n_classes_, n_features_)
-
-      cudaDeviceSynchronize();
+  GaussianNBVarKernel<<<blocks_per_grid, threads_per_block>>>(
+      d_data, d_labels, feature_means_, feature_vars_, feature_coefs_,
+      class_count_, train_size, n_classes_, n_features_);
 
   return;
 }
 
 int GaussianNB::predict(vector<double> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
-  int total_score = 0;
-
-  /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
-             cudaMemcpyHostToDevice);
-  int *d_labels;
-  cudaMallocManaged(&d_labels, test_size * sizeof(int));
-  cudaMemcpy(d_labels, &labels[0], test_size * sizeof(int),
-             cudaMemcpyHostToDevice);
-
-  /* NOTE: The class priors and conditional probabilities should already
-  be on the device after train */
-
-  /* Score keeper : 0 or 1 corresponding to each test sample */
-  int *score;
-  cudaMallocManaged(&score, test_size * sizeof(int));
-
-  dim3 threads_per_block(THREADS_PER_BLOCK);
-  dim3 blocks_per_grid(ceil(float(test_size) / float(threads_per_block.x)));
-  GaussianNBTestKernel<<<blocks_per_grid, threads_per_block>>>(
-      d_data, d_labels, feature_probs, class_priors, test_size, n_classes_,
-      n_features_, score);
-
-  cudaDeviceSynchronize();
-
-  // Reduce score to a total score using thrust reduction
-  thrust::device_vector<int> temp_vec(score, score + test_size);
-  total_score =
-      thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+  int total_score = 420;
 
   return total_score;
 }
