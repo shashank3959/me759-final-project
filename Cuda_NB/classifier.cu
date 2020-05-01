@@ -1,11 +1,11 @@
 #include "classifier.cuh"
 #include <algorithm>
 #include <assert.h>
+#include <float.h>
 #include <functional>
 #include <iostream>
 #include <math.h>
 #include <numeric>
-#include <float.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/reduce.h>
@@ -707,7 +707,7 @@ __global__ void ComplementNBLearnKernel(double *feature_weights_,
   double den_sum = 0;
   double num_sum = 0;
 
-  if (feat_col < n_features_) {         /* Boundary check */
+  if (feat_col < n_features_) {        /* Boundary check */
     for (i = 0; i < n_classes_; ++i) { /* For each class */
       den_sum = all_sum_ - per_class_sum_[i];
       num_sum = per_feature_sum_[feat_col] -
@@ -727,7 +727,7 @@ __global__ void ComplementNBNormalizeKernel(double *feature_weights_,
   int feat_col = threadIdx.x + (blockIdx.x * blockDim.x);
   unsigned int i = 0;
 
-  if (feat_col < n_features_) {         /* Boundary condition check */
+  if (feat_col < n_features_) {        /* Boundary condition check */
     for (i = 0; i < n_classes_; ++i) { // For each class
       feature_weights_[RM_Index(i, feat_col, n_features_)] /= per_class_sum_[i];
     }
@@ -743,10 +743,12 @@ __global__ void ComplementNBTestKernel(const double *d_data,
   unsigned int sample_num = threadIdx.x + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   double prob_class = 0.0;
-  double min = 0.0;
+  double min = DBL_MAX;
   int result = 0;
 
-  if (sample_num < test_size) {        /* Boundary condition check */
+  if (sample_num < test_size) { /* Boundary condition check */
+
+    /* Find the poorest complement match */
     for (i = 0; i < n_classes_; ++i) { /* For each class */
       prob_class = 0.0;
 
@@ -755,14 +757,13 @@ __global__ void ComplementNBTestKernel(const double *d_data,
                       (double)d_data[RM_Index(sample_num, j, n_features_)];
       }
 
-      if (min < prob_class) {
+      if (min > prob_class) {
         min = prob_class;
         result = i;
       }
     }
 
     if (result == d_labels[sample_num]) {
-      // printf("here!\n");
       score[sample_num] = 1;
     } else {
       score[sample_num] = 0;
@@ -829,7 +830,6 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
         per_class_feature_sum_ + (n_features_ * (i + 1)));
     per_class_sum_[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
-    cout << "Class: " << i << " sum:" << per_class_sum_[i] << endl;
   }
 
   /* Find ALL occurences in the dataset */
@@ -851,11 +851,11 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
                                                (n_features_ * (i + 1)));
     per_class_sum_[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
-    cout << "Class: " << i << " sum:" << per_class_sum_[i] << endl;
   }
 
-  ComplementNBNormalizeKernel<<<blocks_per_grid, threads_per_block>>>(
-      feature_weights_, per_class_sum_, n_classes_, n_features_);
+  /* Somehow normalization is worsening the accuracy */
+  // ComplementNBNormalizeKernel<<<blocks_per_grid, threads_per_block>>>(
+  //     feature_weights_, per_class_sum_, n_classes_, n_features_);
 
   return;
 }

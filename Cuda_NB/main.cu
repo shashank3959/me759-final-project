@@ -236,12 +236,12 @@ int main(int argc, char *argv[]) {
     model.train(X_train, Y_train);
     int score = 0;
 
-    score = model.predict(X_test, Y_test);
-    
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 
     cudaEventElapsedTime(&milliseconds, start, stop);
+
+    score = model.predict(X_test, Y_test);
 
     float fraction_correct = float(score) / Y_test.size();
     cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
