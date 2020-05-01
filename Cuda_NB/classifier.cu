@@ -668,135 +668,36 @@ ComplementNB ::~ComplementNB() {}
 
 __global__ void
 ComplementNBCalcKernel(const double *d_data, const int *d_labels,
-                       double *feature_probs, double *class_count_,
-                       unsigned int n_samples_, unsigned int n_classes_,
-                       unsigned int n_features_, int *all_occur_per_term) {
+                       double *per_class_feature_sum_, double *per_feature_sum_,
+                       unsigned int n_samples_,
+                       unsigned int n_features_) {
 
   // Each thread will take care of one term for all docs
   unsigned int tidx = threadIdx.x;
   unsigned int feat_col = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, row = 0;
-  std::printf("inside cal \n");
-  if (feat_col < n_features_) { // End condition check
 
+  if (feat_col < n_features_) { // End condition check
     // For each document / sample
     for (i = 0; i < n_samples_; ++i) {
       row = d_labels[i];
 
       // No race condition since each thread deals with one feature only
-      feature_probs[RM_Index(row, feat_col, n_features_)] +=
+      // This is embarrasingly parallel
+      per_class_feature_sum_[RM_Index(row, feat_col, n_features_)] +=
           d_data[RM_Index(i, feat_col, n_features_)];
-      all_occur_per_term[feat_col] +=
+
+      per_feature_sum_[feat_col] +=
           d_data[RM_Index(i, feat_col, n_features_)];
-      // WARNING: thread divergence :(
-      if (feat_col == 0) {
-        class_count_[row] += 1;
-      }
     }
   }
-  return;
-}
-
-// Kernel divides each row by a number and takes log
-__global__ void
-ComplementNBLearnKernel(double *feature_probs, double *d_row_sums,
-                        double *class_count_, int *all_occur_per_term,
-                        double all_occur, unsigned int n_samples_,
-                        unsigned int n_classes_, unsigned int n_features_) {
-
-  // Each thread will take one term
-  unsigned int tidx = threadIdx.x;
-  int feat_col = tidx + (blockIdx.x * blockDim.x);
-  std::printf(" feat_col \n ");
-  unsigned int i = 0;
-  double den_sum = 0;
-  double num_sum = 0;
-  if (feat_col < n_classes_) { // for each class
-    std::printf(" feat_col %d \n", feat_col);
-    for (i = 0; i < n_features_; ++i) { // For each feature
-
-      if (i == 0) {
-        den_sum = all_occur - d_row_sums[feat_col];
-      }
-
-      num_sum = all_occur_per_term[i] -
-                feature_probs[RM_Index(i, feat_col, n_features_)];
-      feature_probs[RM_Index(i, feat_col, n_features_)] =
-          log(((double)num_sum + 1) / ((double)den_sum + 1));
-    }
-  }
-}
-
-// kernel to normalize feature weights
-
-__global__ void ComplementNBNormalizeKernel(double *feature_probs,
-                                            double *d_row_sums,
-                                            unsigned int n_classes_,
-                                            unsigned int n_features_) {
-
-  // Each thread will take one term
-  unsigned int tidx = threadIdx.x;
-  int feat_col = tidx + (blockIdx.x * blockDim.x);
-  std::printf(" feat_col \n ");
-  unsigned int i = 0;
-  double den_sum = 0;
-
-  if (feat_col < n_classes_) { // for each class
-    std::printf(" feat_col %d \n", feat_col);
-    for (i = 0; i < n_features_; ++i) { // For each feature
-
-      if (i == 0) {
-        den_sum = d_row_sums[feat_col];
-      }
-
-      feature_probs[RM_Index(i, feat_col, n_features_)] /= den_sum;
-    }
-  }
-}
-
-__global__ void ComplementNBTestKernel(const double *d_data,
-                                       const int *d_labels,
-                                       const double *feature_probs,
-                                       const double *class_count_,
-                                       int test_size, int n_classes_,
-                                       int n_features_, int *score) {
-  // Each thread will take one term
-  unsigned int tidx = threadIdx.x;
-  unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
-  unsigned int i = 0, j = 0;
-  double prob_class = 0;
-  double min = 0;
-  int result = 0;
-
-  if (sample_num < test_size) {
-    for (i = 0; i < n_classes_; ++i) { // For each class
-      prob_class = 0.0;
-
-      for (j = 0; j < n_features_; ++j) { // For each feature
-        prob_class += pow(feature_probs[RM_Index(i, j, n_features_)],
-                          d_data[RM_Index(sample_num, j, n_features_)]);
-      }
-
-      if (min > prob_class) {
-        min = prob_class;
-        result = i;
-      }
-    }
-
-    if (result == d_labels[sample_num]) {
-      score[sample_num] = 1;
-
-    } else {
-      score[sample_num] = 0;
-    }
-  }
-
   return;
 }
 
 void ComplementNB::train(vector<double> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
+  unsigned int i = 0;
 
   // Move data and labels to GPU memory
   // NOTE: Memory Operation, put checks later
@@ -812,77 +713,52 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
              cudaMemcpyHostToDevice);
 
   // Use thrust to find unique labels -- declare a thrust label list
-  // WARNING: is it really worth it to sort in thrust?
   thrust::device_vector<int> thr_label_list(d_labels, d_labels + train_size);
   thrust::sort(thr_label_list.begin(), thr_label_list.end());
   auto new_last = thrust::unique(thr_label_list.begin(), thr_label_list.end());
   thr_label_list.erase(new_last, thr_label_list.end());
   n_classes_ = new_last - thr_label_list.begin();
 
-  int *d_label_list;
+  int *d_label_list; // List of unique labels
   cudaMallocManaged(&d_label_list, n_classes_ * sizeof(int));
   cudaMemcpy(d_label_list, thrust::raw_pointer_cast(thr_label_list.data()),
              n_classes_ * sizeof(int), cudaMemcpyHostToDevice);
 
   /* Other initializations */
-  // cudaMallocManaged(&feature_frequencies_, (n_classes_ * n_features_) *
-  // sizeof(double));
-  cudaMallocManaged(&feature_probs,
+  cudaMallocManaged(&per_class_feature_sum_,
                     (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&all_occur_per_term, (n_features_) * sizeof(int));
-  // cudaMallocManaged(&acc_feat_sum_, n_classes_ * sizeof(double));
-
-  cout << "all set " << endl;
-
-  // Is the memset below required?
-  // cudaMemset(all_occur_per_term, 0, (n_features_) * sizeof(int));
+  cudaMallocManaged(&feature_weights_,
+                    (n_classes_ * n_features_) * sizeof(double));
+  cudaMallocManaged(&per_feature_sum_, (n_features_) * sizeof(double));
+  cudaMallocManaged(&per_class_sum_, (n_classes_) * sizeof(double));
 
   /* Calculate frequency of occurence of each term : CalcKernel
   Individual thread for each term. Threads_per_block=1024 */
   dim3 threads_per_block(THREADS_PER_BLOCK);
   dim3 blocks_per_grid(ceil(float(n_features_) / float(threads_per_block.x)));
   ComplementNBCalcKernel<<<blocks_per_grid, threads_per_block>>>(
-      d_data, d_labels, feature_probs, class_priors, train_size, n_classes_,
-      n_features_, all_occur_per_term);
+      d_data, d_labels, per_class_feature_sum_, per_feature_sum_,
+      train_size,
+      n_features_);
+
   cudaDeviceSynchronize();
 
-  /* Learning Phase: Calculate conditional probabilities */
-  double *d_row_sums;
-  cudaMallocManaged(&d_row_sums, n_classes_ * sizeof(double));
-  cout << "sum up " << endl;
-  /* Find total number of terms in each class */
-  cout << "n_classes_ " << n_classes_ << endl;
-
-  for (unsigned int i = 0; i < n_classes_; i++) {
-    thrust::device_vector<double> temp_vec(feature_probs + (n_features_ * i),
-                                           feature_probs +
+  /* Calculate per class sums.
+  Typically we have many more features than classes, so it may not be worth
+  launching a separate kernel for it */
+  for (i = 0; i < n_classes_; ++i) {
+    thrust::device_vector<double> temp_vec(per_class_feature_sum_ + (n_features_ * i),
+                                           per_class_feature_sum_ +
                                                (n_features_ * (i + 1)));
-    d_row_sums[i] =
-        thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+    per_class_sum_[i] = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+    cout<<"Class: "<< i<<" sum:"<<per_class_sum_[i]<<endl;
   }
-  cout << "accim" << endl;
 
-  // vector<double> temp_vec(d_row_sums, (d_row_sums + n_classes_));
-  thrust::device_vector<double> temp_vec(d_row_sums, (d_row_sums + n_classes_));
-  double all_occur;
-  all_occur = (double)accumulate(all_occur_per_term,
-                                 all_occur_per_term + n_features_, 0);
-  cout << " all occur " << all_occur << endl;
+  /* Find ALL occurences in the dataset */
+  thrust::device_vector<double> temp_vec(per_class_sum_, per_class_sum_ + n_classes_);
+  double all_sum_ = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
 
-  cout << "n_classes_ " << n_classes_ << "fb sdfhjdfjs " << endl;
-  ComplementNBLearnKernel<<<blocks_per_grid, threads_per_block>>>(
-      feature_probs, d_row_sums, class_priors, all_occur_per_term, all_occur,
-      train_size, n_classes_, n_features_);
-  cudaDeviceSynchronize();
-
-  // normalize weights
-
-  ComplementNBNormalizeKernel<<<blocks_per_grid, threads_per_block>>>(
-      feature_probs, d_row_sums, n_classes_, n_features_);
-  cudaDeviceSynchronize();
-
-  cout << "over " << n_classes_ << "fb sdfhjdfjs " << endl;
-
+  cout<<"All sum is:"<<all_sum_<<endl;
   return;
 }
 
@@ -890,35 +766,7 @@ int ComplementNB::predict(vector<double> data, vector<int> labels) {
 
   cout << "in test" << endl;
   std::vector<int>::size_type test_size = labels.size();
-  int total_score = 0;
-
-  /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
-             cudaMemcpyHostToDevice);
-  int *d_labels;
-  cudaMallocManaged(&d_labels, test_size * sizeof(int));
-  cudaMemcpy(d_labels, &labels[0], test_size * sizeof(int),
-             cudaMemcpyHostToDevice);
-
-  /* NOTE: The class priors and conditional probabilities should already
-  be on the device after train */
-
-  /* Score keeper : 0 or 1 corresponding to each test sample */
-  int *score;
-  cudaMallocManaged(&score, test_size * sizeof(int));
-
-  dim3 threads_per_block(THREADS_PER_BLOCK);
-  dim3 blocks_per_grid(ceil(float(test_size) / float(threads_per_block.x)));
-  cout << "callling test ker" << endl;
-  ComplementNBTestKernel<<<blocks_per_grid, threads_per_block>>>(
-      d_data, d_labels, feature_probs, class_priors, test_size, n_classes_,
-      n_features_, score);
-
-  // Reduce score to a total score using thrust reduction
-  vector<int> temp_vec(score, score + test_size);
-  total_score = std::accumulate(temp_vec.begin(), temp_vec.end(), 0);
+  int total_score = 420;
 
   return total_score;
 }

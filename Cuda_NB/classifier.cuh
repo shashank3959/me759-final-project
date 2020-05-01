@@ -73,15 +73,14 @@ public:
 class ComplementNB {
 
 public:
-  double *feature_probs;
   vector<int>::size_type n_features_ = 1; // Number of features
   unsigned int n_classes_ = 1;            // Number of samples in each class
-  double *class_count_;                   // Class prior probabilities
-  double *feat_count_;
-  double *class_priors;
-  double *feature_frequencies_;
-  double *acc_feat_sum_;
-  int *all_occur_per_term;
+  double *feature_weights_; // Learned weights of the model; n_features_ * n_classes_
+  double *per_class_feature_sum_; // n_features_ * n_classes_
+  double *per_feature_sum_;
+  double *per_class_sum_;
+  double all_sum_;
+
   ComplementNB();
 
   virtual ~ComplementNB();
