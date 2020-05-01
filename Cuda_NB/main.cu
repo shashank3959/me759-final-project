@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
     GaussianNB model = GaussianNB();
 
     /* Training  */
-    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+    cout << "Training a " << classifier << " Naive Bayes classifier" << endl;
 
     cudaEventRecord(training_start);
     model.train(X_train, Y_train);
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     BernoulliNB model = BernoulliNB();
 
     /* Training  */
-    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+    cout << "Training a " << classifier << " Naive Bayes classifier" << endl;
 
     cudaEventRecord(training_start);
     model.train(X_train, Y_train);
@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     MultinomialNB model = MultinomialNB();
 
     /* Training  */
-    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+    cout << "Training a " << classifier << " Naive Bayes classifier" << endl;
 
     cudaEventRecord(training_start);
     model.train(X_train, Y_train);
@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
     ComplementNB model = ComplementNB();
 
     /* Training  */
-    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+    cout << "Training a " << classifier << " Naive Bayes classifier" << endl;
 
     cudaEventRecord(training_start);
     model.train(X_train, Y_train);
