@@ -825,5 +825,20 @@ int ComplementNB::predict(vector<double> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 0;
 
+  /* Moving test data to the device */
+  double *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+             cudaMemcpyHostToDevice);
+  int *d_labels;
+  cudaMallocManaged(&d_labels, test_size * sizeof(int));
+  cudaMemcpy(d_labels, &labels[0], test_size * sizeof(int),
+             cudaMemcpyHostToDevice);
+
+   /* Score keeper : 0 or 1 corresponding to each test sample */
+   int *score;
+   cudaMallocManaged(&score, test_size * sizeof(int));
+
+      
   return total_score;
 }
