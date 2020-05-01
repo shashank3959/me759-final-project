@@ -694,6 +694,48 @@ ComplementNBCalcKernel(const double *d_data, const int *d_labels,
   return;
 }
 
+
+__global__ void
+ComplementNBLearnKernel(double *feature_weights_,
+                      double *per_class_feature_sum_, double *per_feature_sum_,
+                        double *per_class_sum_, double all_sum_,
+                        unsigned int n_classes_, unsigned int n_features_) {
+  // Each thread will take one feature
+  unsigned int tidx = threadIdx.x;
+  int feat_col = tidx + (blockIdx.x * blockDim.x);
+
+  unsigned int i = 0;
+  double den_sum = 0;
+  double num_sum = 0;
+
+  if (feat_col < n_classes_) { /* Boundary check */
+    for (i = 0; i < n_classes_; ++i) { /* For each class */
+      den_sum = all_sum_ - per_class_sum_[i];
+      num_sum = per_feature_sum_[feat_col] -
+                    per_class_feature_sum_[RM_Index(i, feat_col, n_features_)];
+
+      feature_weights_[RM_Index(i, feat_col, n_features_)] =
+                            log((num_sum + 1.0) / (den_sum + n_features_));
+    }
+  }
+}
+
+__global__ void
+ComplementNBNormalizeKernel(double *feature_weights_,
+                                            double *per_class_sum_,
+                                            unsigned int n_classes_,
+                                            unsigned int n_features_) {
+  // Each thread will take one feature
+  int feat_col = threadIdx.x + (blockIdx.x * blockDim.x);
+  unsigned int i = 0;
+
+  if (feat_col < n_classes_) { /* Boundary condition check */
+    for (i = 0; i < n_classes_; ++i) { // For each class
+      feature_weights_[RM_Index(i, feat_col, n_features_)] /= per_class_sum_[i];
+    }
+  }
+}
+
 void ComplementNB::train(vector<double> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
@@ -758,15 +800,30 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
   thrust::device_vector<double> temp_vec(per_class_sum_, per_class_sum_ + n_classes_);
   double all_sum_ = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
 
-  cout<<"All sum is:"<<all_sum_<<endl;
+  /* Learning Phase: Calculate weights per feature per class */
+  ComplementNBLearnKernel<<<blocks_per_grid, threads_per_block>>>(
+    feature_weights_, per_class_feature_sum_, per_feature_sum_, per_class_sum_,
+    all_sum_, n_classes_, n_features_);
+
+  /* Normalize Phase for stable coefficients.
+  Reuse per_class_sum_ variable */
+  for (i = 0; i < n_classes_; ++i) {
+    thrust::device_vector<double> temp_vec(feature_weights_ + (n_features_ * i),
+                                           feature_weights_ +
+                                               (n_features_ * (i + 1)));
+    per_class_sum_[i] = thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
+    cout<<"Class: "<< i<<" sum:"<<per_class_sum_[i]<<endl;
+  }
+
+  ComplementNBNormalizeKernel<<<blocks_per_grid, threads_per_block>>>(
+      feature_weights_, per_class_sum_, n_classes_, n_features_);
+
   return;
 }
 
 int ComplementNB::predict(vector<double> data, vector<int> labels) {
-
-  cout << "in test" << endl;
   std::vector<int>::size_type test_size = labels.size();
-  int total_score = 420;
+  int total_score = 0;
 
   return total_score;
 }
