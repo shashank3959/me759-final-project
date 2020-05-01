@@ -162,6 +162,7 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
       d_data, d_labels, feature_means_, feature_vars_, class_count_, train_size,
       n_classes_, n_features_);
 
+  cudaDeviceSynchronize();
   return;
 }
 
@@ -852,6 +853,7 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
     per_class_sum_[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
+  cudaDeviceSynchronize();
 
   /* Somehow normalization is worsening the accuracy */
   // ComplementNBNormalizeKernel<<<blocks_per_grid, threads_per_block>>>(

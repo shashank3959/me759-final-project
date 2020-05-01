@@ -4,6 +4,7 @@
 #include <map>
 #include <math.h>
 #include <vector>
+#include <string>
 
 vector<vector<double>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
@@ -148,107 +149,156 @@ int main(int argc, char *argv[]) {
   }
 
   cout << "X_train number of elements: " << X_train.size() << endl;
-  cout << "Y_train number of elements: " << Y_train.size() << endl << endl;
-
+  cout << "Y_train number of elements: " << Y_train.size() << endl;
   cout << "X_test number of elements: " << X_test.size() << endl;
-  cout << "Y_test number of elements: " << Y_test.size() << endl << endl;
+  cout << "Y_test number of elements: " << Y_test.size() << endl;
 
   unsigned int n_cols = X_train.size() / n_rows_train;
 
   cout << "Number of rows:" << n_rows_train << endl;
-
   cout << "Number of cols:" << n_cols << endl;
 
   // Timing CUDA events
-  cudaEvent_t start, stop;
-  float milliseconds = 0;
+  cudaEvent_t training_start, training_stop, testing_start, testing_stop;
+  float ms_train = 0.0, ms_test = 0.0;
+  cudaEventCreate(&training_start);
+  cudaEventCreate(&training_stop);
+  cudaEventCreate(&testing_start);
+  cudaEventCreate(&testing_stop);
 
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
+  // Classifier name
+  string classifier;
 
   if (algoID == 0) {
-    // GaussianNB
-    cout << "Training a GaussianNB classifier" << endl;
+    classifier = "Gaussian";
 
     GaussianNB model = GaussianNB();
+
+    /* Training  */
+    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+
+    cudaEventRecord(training_start);
     model.train(X_train, Y_train);
+    cudaDeviceSynchronize();
+    cudaEventRecord(training_stop);
+    cudaEventSynchronize(training_stop);
+
+    cudaEventElapsedTime(&ms_train, training_start, training_stop);
+    cout << "Training time: " << ms_train << " ms" << endl;
+
+    /* Testing */
+    cout << "Testing..." << endl;
 
     int score = 0;
+    cudaEventRecord(testing_start);
     score = model.predict(X_test, Y_test);
+    cudaEventRecord(testing_stop);
+    cudaEventSynchronize(testing_stop);
 
-    double fraction_correct = double(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
+    float fraction_correct = float(score) / Y_test.size();
+    cout << "Test accuracy: " << (100 * fraction_correct) << " percent" << endl;
+
+    // Prints the time taken to run the code in ms
+    cudaEventElapsedTime(&ms_test, testing_start, testing_stop);
+    cout << "Testing time: " << ms_test << " ms" << endl;
 
   } else if (algoID == 1) {
-    // BernoulliNB
-
-    cout << "Training a BernoulliNB NB classifier" << endl;
-
-    cudaEventRecord(start);
-
+    classifier = "Bernoulli";
     BernoulliNB model = BernoulliNB();
+
+    /* Training  */
+    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+
+    cudaEventRecord(training_start);
     model.train(X_train, Y_train);
+    cudaEventRecord(training_stop);
+    cudaEventSynchronize(training_stop);
+
+    cudaEventElapsedTime(&ms_train, training_start, training_stop);
+    cout << "Training time: " << ms_train << " ms" << endl;
+
+    /* Testing */
+    cout << "Testing..." << endl;
 
     int score = 0;
-
+    cudaEventRecord(testing_start);
     score = model.predict(X_test, Y_test);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-
-    cudaEventElapsedTime(&milliseconds, start, stop);
+    cudaEventRecord(testing_stop);
+    cudaEventSynchronize(testing_stop);
 
     float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
+    cout << "Test accuracy: " << (100 * fraction_correct) << " percent" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: " << milliseconds << " ms" << endl;
+    cudaEventElapsedTime(&ms_test, testing_start, testing_stop);
+    cout << "Testing time: " << ms_test << " ms" << endl;
 
   } else if (algoID == 2) {
-    /* MultinomialNB */
-    cout << "Training a Multinomial NB classifier" << endl;
-
-    cudaEventRecord(start);
-
+    classifier = "Multinomial";
     MultinomialNB model = MultinomialNB();
+
+    /* Training  */
+    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+
+    cudaEventRecord(training_start);
     model.train(X_train, Y_train);
+    cudaEventRecord(training_stop);
+    cudaEventSynchronize(training_stop);
+
+    cudaEventElapsedTime(&ms_train, training_start, training_stop);
+    cout << "Training time: " << ms_train << " ms" << endl;
+
+    /* Testing */
+    cout << "Testing..." << endl;
 
     int score = 0;
-
+    cudaEventRecord(testing_start);
     score = model.predict(X_test, Y_test);
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-
-    cudaEventElapsedTime(&milliseconds, start, stop);
+    cudaEventRecord(testing_stop);
+    cudaEventSynchronize(testing_stop);
 
     float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
+    cout << "Test accuracy: " << (100 * fraction_correct) << " percent" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: " << milliseconds << " ms" << endl;
+    cudaEventElapsedTime(&ms_test, testing_start, testing_stop);
+    cout << "Testing time: " << ms_test << " ms" << endl;
 
   } else if (algoID == 3) {
-    // ComplementNB
-    cout << "Training a ComplementNB classifier" << endl;
-
-    cudaEventRecord(start);
-
+    classifier = "Complement";
     ComplementNB model = ComplementNB();
+
+    /* Training  */
+    cout << "Training a " << classifier << " Naive Bayes classifier" <<endl;
+
+    cudaEventRecord(training_start);
     model.train(X_train, Y_train);
+    cudaEventRecord(training_stop);
+    cudaEventSynchronize(training_stop);
+
+    cudaEventElapsedTime(&ms_train, training_start, training_stop);
+    cout << "Training time: " << ms_train << " ms" << endl;
+
+    /* Testing */
+    cout << "Testing..." << endl;
+
     int score = 0;
-
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
-
-    cudaEventElapsedTime(&milliseconds, start, stop);
-
+    cudaEventRecord(testing_start);
     score = model.predict(X_test, Y_test);
+    cudaEventRecord(testing_stop);
+    cudaEventSynchronize(testing_stop);
 
     float fraction_correct = float(score) / Y_test.size();
-    cout << "You got " << (100 * fraction_correct) << " percent correct" << endl;
+    cout << "Test accuracy: " << (100 * fraction_correct) << " percent" << endl;
 
     // Prints the time taken to run the code in ms
-    cout << "Time taken: " << milliseconds << " ms" << endl;
+    cudaEventElapsedTime(&ms_test, testing_start, testing_stop);
+    cout << "Testing time: " << ms_test << " ms" << endl;
+
   }
 
+  /* Cleanup */
+  cudaEventDestroy(training_start);
+  cudaEventDestroy(training_stop);
   return 0;
 }
