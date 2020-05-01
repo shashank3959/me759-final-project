@@ -228,16 +228,16 @@ int main(int argc, char *argv[]) {
 
   } else if (algoID == 3) {
     // ComplementNB
-    cout << "Training a ComplementNB  NB classifier" << endl;
+    cout << "Training a ComplementNB classifier" << endl;
 
     cudaEventRecord(start);
 
     ComplementNB model = ComplementNB();
     model.train(X_train, Y_train);
-    cout << "back to main" << endl;
     int score = 0;
 
     score = model.predict(X_test, Y_test);
+    
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 
