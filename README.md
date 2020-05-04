@@ -18,7 +18,10 @@ This will create .csv files in the data folder or if your running this code in W
 ```
 pip3 install -r requirements.txt
 ```
-
+and run the data preprocessing step using (change algoID to generated dataset for different algorithm, it would take some time to store the data in csv format) <br> 
+```
+python preprocessData.py --algoID 2 
+```
 ### Functionality check 
 In order to check the functionality of our C++ implemenation of Navies Bayies variant, we used the Python machine learning package scikit-learn to verify the funcationality by comparing the accuracy on the test set data. For example, to test ComplementNB use algoID 4 <br>
 ```
