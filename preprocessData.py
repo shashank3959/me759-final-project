@@ -82,10 +82,10 @@ def save_file(X,target,ID):
 	if ID== "1":
 		X, y = load_iris(return_X_y=True)
 	
-		# Test - Validation Split 75 % training and 25% testing 
+		# Test - Validation Split 80 % training and 20% testing 
 		X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-		# Bag of Words: Save to csv (from scipy sparse matrix representation)
+		#  Save to csv (from scipy sparse matrix representation)
 				
 		np.savetxt("./data/test_states.csv", X_test, delimiter=",")
 		np.savetxt("./data/train_states.csv", X_train, delimiter=",")
