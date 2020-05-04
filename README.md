@@ -18,14 +18,16 @@ This will create .csv files in the data folder or if your running this code in W
 ```
 pip3 install -r requirements.txt
 ```
-Example: To create dataset for ComplementNB use algoID 4 <br>
+
+### Functionality check 
+In order to check the functionality of our C++ implemenation of Navies Bayies variant, we used the Python machine learning package scikit-learn to verify the funcationality by comparing the accuracy on the test set data. For example, to test ComplementNB use algoID 4 <br>
 ```
 python main.py --algoID 4 
 ```
 <br>
 
 Note: <br> 
-For GaussianNB, we used the Iris dataset which is already in numerical format so no data processing step was performed and the data file is in the data folder.
+For GaussianNB, we used the Iris dataset which is already in numerical format so no data processing step was performed and the data is stored directly in the data folder. 
 
 # To compile
 
