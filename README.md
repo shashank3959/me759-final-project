@@ -1,8 +1,11 @@
 # me759-final-project
 CUDA Accelerated Implementation of Naive Bayes and it’s variants
 
-## Data Preprocessing Step 
-We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) and preprocessed the text data into suitable format such as onehot and bag of words models using Python packages such as NLTK and scikit-learn. In order to run the python script in Euler, open preprocessPython.sh file and change the algoID variable as follows to create dataset for that particular algorithm, 
+# Data Preprocessing Step 
+We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) and preprocessed the text data into suitable format such as onehot and bag of words models using Python packages such as NLTK and scikit-learn. 
+
+## Running on Euler 
+In order to run the python script in Euler, open preprocessPython.sh file and change the algoID variable as follows to create dataset for that particular algorithm, 
 
 1: GaussianNB <br>
 2: BernoulliNB <br> 
@@ -13,7 +16,9 @@ and run the script using <br>
 ```
 sbatch python.sh 
 ```
-This will create .csv files in the data folder or if your running this code in Windows/Mac, install python and install the dependencies by 
+This will create .csv files in the data folder 
+## Running on Windows/Mac
+if your running this code in Windows/Mac, install python and install the dependencies by 
 <br>
 ```
 pip3 install -r requirements.txt
@@ -24,9 +29,17 @@ python preprocessData.py --algoID 2
 ```
 ### Functionality check 
 In order to check the functionality of our C++ implemenation of Navies Bayies variant, we used the Python machine learning package scikit-learn to verify the funcationality by comparing the accuracy on the test set data. For example, to test ComplementNB use algoID 4 <br>
+## Running on Euler 
+Change the algoID variable in the file name checkFunctionality.sh and run the script using and view in the accuracy in log file. 
+
+```
+sbatch checkFunctionality.sh 
+```
+## Running on Windows/Mac
 ```
 python main.py --algoID 4 
 ```
+
 <br>
 
 Note: <br> 
