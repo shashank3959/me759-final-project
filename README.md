@@ -2,7 +2,7 @@
 CUDA Accelerated Implementation of Naive Bayes and it’s variants
 
 ## Data Preprocessing Step 
-We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) and we preprocess the text data into suitable format such as onehot and bag of words models using Python packages such as NLTK and scikit-learn. In order to run the python script in Euler, open python.sh file and change the algoID variable as follows, 
+We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) and preprocessed the text data into suitable format such as onehot and bag of words models using Python packages such as NLTK and scikit-learn. In order to run the python script in Euler, open python.sh file and change the algoID variable as follows, 
 
 1: GaussianNB <br>
 2: BernoulliNB <br> 
@@ -25,7 +25,7 @@ python main.py --algoID 4
 <br>
 
 Note: <br> 
-For Gaussian the data is already in numerical format so no data processing step is performed. 
+For GaussianNB, we used the Iris dataset which is already in numerical format so no data processing step was performed and the data file is in the data folder.
 
 # To compile
 
