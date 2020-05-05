@@ -26,12 +26,12 @@ def cleanData():
 	print("Loading Data...")
 	reviews_train = []
 	try:
-		for line in open('./Dataset/aclImdb/movie_data/full_train.txt', 'r',encoding="utf8"):
+		for line in open('./Dataset/Imdb/movie_data/full_train.txt', 'r',encoding="utf8"):
 
 			reviews_train.append(line.strip())
 
 		reviews_test = []
-		for line in open('./Dataset/aclImdb/movie_data/full_test.txt', 'r',encoding="utf8"):
+		for line in open('./Dataset/Imdb/movie_data/full_test.txt', 'r',encoding="utf8"):
 
 			reviews_test.append(line.strip())
 	except:
@@ -70,7 +70,9 @@ def cleanData():
 	cleaned_train = remove_stop_words_stemmer(reviews_train_clean)
 	cleaned_test = remove_stop_words_stemmer(reviews_test_clean)
 	data = cleaned_test + cleaned_train
-	return data,target
+
+	# Mixing the training and test sets -- we'll split them later
+	return cleaned_test + cleaned_train, target+target
 
 
 def save_file(X, target, ID):
@@ -92,49 +94,45 @@ def save_file(X, target, ID):
 
 	if ID == "2":
 		cvb = CountVectorizer(binary=True, max_features=3000)
-		cvb.fit(X)
-		X = cvb.transform(X)
+		X = cvb.fit_transform(X)
 
-		# Test - Validation Split 75 % training and 25% testing
-		X_train, X_val, y_train, y_val = train_test_split(
+		X_train, X_test, y_train, y_test = train_test_split(
 			X, target, train_size = 0.9, random_state=seed
 		)
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
-		x = pd.DataFrame.sparse.from_spmatrix(X_val)
-		x.to_csv('./data/X_test_onehot.csv',index=False, header=False)
-
 		x = pd.DataFrame.sparse.from_spmatrix(X_train)
 		x.to_csv('./data/X_train_onehot.csv',index=False, header=False)
+
+		x = pd.DataFrame.sparse.from_spmatrix(X_test)
+		x.to_csv('./data/X_test_onehot.csv',index=False, header=False)
 
 		y_train_df = pd.DataFrame(data={"col1": y_train})
 		y_train_df.to_csv("./data/y_train_onehot.csv", sep=',',index=False, header=False)
 
-		y_test_df = pd.DataFrame(data={"col1": y_val})
+		y_test_df = pd.DataFrame(data={"col1": y_test})
 		y_test_df.to_csv("./data/y_test_onehot.csv", sep=',',index=False, header=False)
 
 	elif ID == "3" or ID == "4":
 		# Binary = False will make sure counts show up
 		cvw = CountVectorizer(binary=False, max_features=3000)
-		cvw.fit(X)
-		X = cvw.transform(X)
+		X = cvw.fit_transform(X)
 
-		# Test - Validation Split 75 % training and 25% testing
-		X_train, X_val, y_train, y_val = train_test_split(
+		X_train, X_test, y_train, y_test = train_test_split(
 			X, target, train_size = 0.9, random_state=seed
 		)
 
 		# Bag of Words: Save to csv (from scipy sparse matrix representation)
-		x = pd.DataFrame.sparse.from_spmatrix(X_val)
-		x.to_csv('./data/X_test_bow.csv',index=False, header=False)
-
 		x = pd.DataFrame.sparse.from_spmatrix(X_train)
 		x.to_csv('./data/X_train_bow.csv',index=False, header=False)
+
+		x = pd.DataFrame.sparse.from_spmatrix(X_test)
+		x.to_csv('./data/X_test_bow.csv',index=False, header=False)
 
 		y_train_df = pd.DataFrame(data={"col1": y_train})
 		y_train_df.to_csv("./data/y_train_bow.csv", sep=',',index=False, header=False)
 
-		y_test_df = pd.DataFrame(data={"col1": y_val})
+		y_test_df = pd.DataFrame(data={"col1": y_test})
 		y_test_df.to_csv("./data/y_test_bow.csv", sep=',',index=False, header=False)
 
 
