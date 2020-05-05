@@ -12,5 +12,3 @@ module load cuda/10
 nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -Xptxas -O3 -o NBvariant
 
 ./NBvariant 3
-
-

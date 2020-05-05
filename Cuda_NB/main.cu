@@ -90,6 +90,16 @@ int main(int argc, char *argv[]) {
   3: ComplementNB
   */
   int algoID = atoi(argv[1]);
+
+  if (algoID == 1 || algoID == 2 || algoID == 3 || algoID == 0 ) {
+          cout<<"Loading data "<<endl;
+  }
+  else {
+          cout << "Invalid option. Code is exiting" << endl;
+          exit(1);
+  }
+
+
   cout<<"Selected algoID: "<<algoID <<endl;
   vector<float> X_train;
   vector<float> X_test;

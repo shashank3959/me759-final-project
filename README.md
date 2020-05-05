@@ -2,6 +2,7 @@
 CUDA Accelerated Implementation of Naive Bayes and it’s variants
 
 # Download dataset
+If you do this step, you need not pre-process your data!
 ```
 bash download_dataset.sh
 ```
@@ -69,7 +70,7 @@ For GaussianNB, we used the Iris dataset which is already in numerical format so
 
 ### CUDA
 1. Go to the Cuda\_NB folder <br>
-2. nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -Xptxas -O3 -o classifier\_gpu <br>
+2. nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -Xptxas -O3 -o NBvariant <br>
 
 ## Running on Euler
 ### OpenMP

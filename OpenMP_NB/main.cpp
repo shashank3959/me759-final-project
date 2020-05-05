@@ -63,16 +63,16 @@ int main(int argc, char *argv[]) {
   2: MultinomialNB
   3: ComplementNB
   */
-  int algoID = 3;//toi(argv[1]);			
+  int algoID = atoi(argv[1]);
 
-  if (algoID ==1 || algoID ==2 || algoID ==3 || algoID ==0 ) {
+  if (algoID == 1 || algoID == 2 || algoID == 3 || algoID == 0 ) {
           cout<<"Loading data "<<endl;
   }
   else {
           cout << "Invalid option. Code is exiting" << endl;
           exit(1);
   }
- 
+
   high_resolution_clock::time_point start;
   high_resolution_clock::time_point end;
   duration<double, std::milli> duration_sec;
@@ -142,12 +142,12 @@ int main(int argc, char *argv[]) {
 
   cout << "X_test number of elements " << X_test.size() << endl;
   cout << "X_test element size " << X_test[0].size() << endl;
-  cout << "Y_test number of elements " << Y_test.size() << endl << endl; 
+  cout << "Y_test number of elements " << Y_test.size() << endl << endl;
 
-  
+
   if (algoID == 0) {
-    
-   
+
+
     cout << "Training GaussianNB classifier" << endl;
     GaussianNB model = GaussianNB();
 
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
     tt+=duration_sec.count();
     }
-    
+
     cout << "Training time " << tt/10 << endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = float(score) / Y_test.size();
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
     end = high_resolution_clock::now();
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
     tt+=duration_sec.count();
-   } 
+   }
 
     cout << "Training time " << tt/10<< endl;
     score = model.predict(X_test, Y_test);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
     /* MultinomialNB */
     cout<<"Training a Multinomial NB classifier"<<endl;
     MultinomialNB model = MultinomialNB();
-   
+
    for(int i=0;i<10;i++)
     {
     start = high_resolution_clock::now();
@@ -196,17 +196,17 @@ int main(int argc, char *argv[]) {
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
     tt+=duration_sec.count();
     }
-  
+
     cout << "Training time " << tt/10<< endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = (float) score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
- 
+
  } else if (algoID == 3) {
     /* ComplementNB */
     cout<<"Training a ComplementNB classifier"<<endl;
     ComplementNB model = ComplementNB();
-    
+
    for(i=0;i<10;i++)
    {
     start = high_resolution_clock::now();
@@ -214,14 +214,14 @@ int main(int argc, char *argv[]) {
     end = high_resolution_clock::now();
     duration_sec = std::chrono::duration_cast<duration<float, std::milli>>(end - start);
     tt+=duration_sec.count();
-    
-   } 
+
+   }
 
     cout << "Training time " << tt/10<< endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = (float)score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
   }
- 
+
   return 0;
 }
