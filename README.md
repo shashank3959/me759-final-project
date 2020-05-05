@@ -1,6 +1,11 @@
 # me759-final-project
 CUDA Accelerated Implementation of Naive Bayes and it’s variants
 
+# Download dataset
+```
+bash download_dataset.sh
+```
+
 # Data Preprocessing
 We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) and Iris Dataset and preprocessed the text data into suitable format such as onehot and bag of words models using Python packages such as NLTK and scikit-learn.
 
