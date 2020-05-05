@@ -2,8 +2,8 @@
   Command to run the script: python preprocessData.py --algoID 1
   Choose algoID
   1 for GaussianNB
-  2 for MultinomialNB
-  3 for BernoulliNB
+  2 for BernoulliNB
+  3 for MultinomialNB
   4 for ComplementNB
 
 '''
@@ -23,10 +23,9 @@ from sklearn.datasets import load_iris
 seed = 42
 
 def cleanData():
-	print("Loading Data")
+	print("Loading Data...")
 	reviews_train = []
 	try:
-
 		for line in open('./Dataset/aclImdb/movie_data/full_train.txt', 'r',encoding="utf8"):
 
 			reviews_train.append(line.strip())
@@ -74,26 +73,25 @@ def cleanData():
 	return data,target
 
 
-def save_file(X,target,ID):
+def save_file(X, target, ID):
 
 	if not os.path.exists('data'):
 		os.makedirs('data')
 
-	if ID== "1":
+	if ID == "1":
 		X, y = load_iris(return_X_y=True)
 
 		# Test - Validation Split 80 % training and 20% testing
-		X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+		X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
 
 		#  Save to csv (from scipy sparse matrix representation)
-
 		np.savetxt("./data/test_states.csv", X_test, delimiter=",")
 		np.savetxt("./data/train_states.csv", X_train, delimiter=",")
 		np.savetxt("./data/train_labels.csv", y_train, delimiter=",")
 		np.savetxt("./data/test_labels.csv", y_test, delimiter=",")
 
-	if ID== "2":
-		cvb = CountVectorizer(binary=True,max_features=3000)
+	if ID == "2":
+		cvb = CountVectorizer(binary=True, max_features=3000)
 		cvb.fit(X)
 		X = cvb.transform(X)
 
@@ -115,7 +113,7 @@ def save_file(X,target,ID):
 		y_test_df = pd.DataFrame(data={"col1": y_val})
 		y_test_df.to_csv("./data/y_test_onehot.csv", sep=',',index=False, header=False)
 
-	elif ID== "3" or ID =="4":
+	elif ID == "3" or ID == "4":
 		# Binary = False will make sure counts show up
 		cvw = CountVectorizer(binary=False, max_features=3000)
 		cvw.fit(X)
@@ -142,7 +140,7 @@ def save_file(X,target,ID):
 
 if __name__=="__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--algoID", help="choose naive_bayes algorithm variant")
+	parser.add_argument("--algoID", help="choose Naive Bayes algorithm variant")
 	args = parser.parse_args()
 	print("Chosen algoID is: ", args.algoID)
 
@@ -150,7 +148,7 @@ if __name__=="__main__":
 		if args.algoID != "1":
 			X,target = cleanData()
 			save_file(X,target,args.algoID)
-			print("Successfully preprocessed the movie reviews")
+			print("Successfully preprocessed the IMDB Dataset")
 		else:
 			X,target =[],[]
 			save_file(X,target,args.algoID)
