@@ -3,7 +3,8 @@
 #SBATCH -p wacc
 #SBATCH -J CudaNB 
 #SBATCH -o CudaNB-%j.out -e CudaNB-%j.err
-#SBATCH --gres=gpu:1 -c 1
+#SBATCH --cpus-per-task=4
+#SBATCH --gres=gpu:gtx1080:1
 #SBATCH --mem=16G
 
 cd $SLURM_SUBMIT_DIR
