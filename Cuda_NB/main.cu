@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
       #pragma omp section
       Y_test = Load_Label("../data/y_test_onehot.csv");
-    //}
+    }
   } else if (algoID == 2 || algoID == 3) {
     /* MultinomialNB  or ComplementNB */
    #pragma omp parallel sections
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 
       #pragma omp section
       Y_test = Load_Label("../data/y_test_bow.csv");
-    //}
+    }
   }
 
   cout << "X_train number of elements: " << X_train.size() << endl;
