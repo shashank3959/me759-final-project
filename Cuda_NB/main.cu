@@ -6,24 +6,24 @@
 #include <vector>
 #include <string>
 
-vector<vector<double>> Load_State(string file_name) {
+vector<vector<float>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
-  vector<vector<double>> state_out;
+  vector<vector<float>> state_out;
   string start;
 
   while (getline(in_state_, start)) {
 
-    vector<double> x_coord;
+    vector<float> x_coord;
 
     istringstream ss(start);
-    double a;
+    float a;
     ss >> a;
     x_coord.push_back(a);
 
     string value;
 
     while (getline(ss, value, ',')) {
-      double b;
+      float b;
       ss >> b;
       x_coord.push_back(b);
     }
@@ -34,18 +34,18 @@ vector<vector<double>> Load_State(string file_name) {
   return state_out;
 }
 
-vector<double> Load_State_1D(string file_name, unsigned int &n_rows) {
+vector<float> Load_State_1D(string file_name, unsigned int &n_rows) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
-  vector<double> state_out;
+  vector<float> state_out;
   string start;
   n_rows = 0;
 
   while (getline(in_state_, start)) {
 
-    // vector<double> x_coord;
+    // vector<float> x_coord;
 
     istringstream ss(start);
-    double a;
+    float a;
     ss >> a;
     state_out.push_back(a);
     // x_coord.push_back(a);
@@ -53,7 +53,7 @@ vector<double> Load_State_1D(string file_name, unsigned int &n_rows) {
     string value;
 
     while (getline(ss, value, ',')) {
-      double b;
+      float b;
       ss >> b;
       // x_coord.push_back(b);
       state_out.push_back(b);
@@ -90,9 +90,9 @@ int main(int argc, char *argv[]) {
   3: ComplementNB
   */
   int algoID = atoi(argv[1]);
-
-  vector<double> X_train;
-  vector<double> X_test;
+  cout<<"algoID"<<algoID <<endl;
+  vector<float> X_train;
+  vector<float> X_test;
   vector<int> Y_train;
   vector<int> Y_test;
   unsigned int n_rows_train;
@@ -100,52 +100,52 @@ int main(int argc, char *argv[]) {
 
   if (algoID == 0) {
     /* GaussianNB */
-    #pragma omp parallel sections
-    {
-      #pragma omp section
-      X_train = Load_State_1D("../OpenMP_NB/train_states.csv", n_rows_train);
+    //#pragma omp parallel sections
+    //{
+      //#pragma omp section
+      X_train = Load_State_1D("./train_states.csv", n_rows_train);
 
-      #pragma omp section
-      X_test = Load_State_1D("../OpenMP_NB/test_states.csv", n_rows_test);
+      //#pragma omp section
+      X_test = Load_State_1D("./test_states.csv", n_rows_test);
 
-      #pragma omp section
-      Y_train = Load_Label("../OpenMP_NB/train_labels.csv");
+      //#pragma omp section
+      Y_train = Load_Label("./train_labels.csv");
 
-      #pragma omp section
-      Y_test = Load_Label("../OpenMP_NB/test_labels.csv");
-    }
+      //#pragma omp section
+      Y_test = Load_Label("./test_labels.csv");
+    //}
   } else if (algoID == 1) {
     /* BernoulliNB */
-    #pragma omp parallel sections
-    {
-      #pragma omp section
-      X_train = Load_State_1D("../OpenMP_NB/X_train_onehot.csv", n_rows_train);
+   // #pragma omp parallel sections
+    //{
+      //#pragma omp section
+      X_train = Load_State_1D("./X_train_onehot.csv", n_rows_train);
 
-      #pragma omp section
-      X_test = Load_State_1D("../OpenMP_NB/X_test_onehot.csv", n_rows_test);
+      //#pragma omp section
+      X_test = Load_State_1D("./X_test_onehot.csv", n_rows_test);
 
-      #pragma omp section
-      Y_train = Load_Label("../OpenMP_NB/y_train_onehot.csv");
+      //#pragma omp section
+      Y_train = Load_Label("./y_train_onehot.csv");
 
-      #pragma omp section
-      Y_test = Load_Label("../OpenMP_NB/y_test_onehot.csv");
-    }
+      //#pragma omp section
+      Y_test = Load_Label("./y_test_onehot.csv");
+    //}
   } else if (algoID == 2 || algoID == 3) {
     /* MultinomialNB  or ComplementNB */
-    #pragma omp parallel sections
-    {
-      #pragma omp section
-      X_train = Load_State_1D("../OpenMP_NB/X_train_bow.csv", n_rows_train);
+  //  #pragma omp parallel sections
+    //{
+      //#pragma omp section
+      X_train = Load_State_1D("./X_train_bow.csv", n_rows_train);
 
-      #pragma omp section
-      X_test = Load_State_1D("../OpenMP_NB/X_test_bow.csv", n_rows_test);
+      //#pragma omp section
+      X_test = Load_State_1D("./X_test_bow.csv", n_rows_test);
 
-      #pragma omp section
-      Y_train = Load_Label("../OpenMP_NB/y_train_bow.csv");
+      //#pragma omp section
+      Y_train = Load_Label("./y_train_bow.csv");
 
-      #pragma omp section
-      Y_test = Load_Label("../OpenMP_NB/y_test_bow.csv");
-    }
+      //#pragma omp section
+      Y_test = Load_Label("./y_test_bow.csv");
+    //}
   }
 
   cout << "X_train number of elements: " << X_train.size() << endl;

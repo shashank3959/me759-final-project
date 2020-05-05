@@ -23,8 +23,8 @@ GaussianNB::GaussianNB() {}
 
 GaussianNB::~GaussianNB() {}
 
-__global__ void GaussianNBSumKernel(const double *d_data, const int *d_labels,
-                                    double *feature_means_, int *class_count_,
+__global__ void GaussianNBSumKernel(const float *d_data, const int *d_labels,
+                                    float *feature_means_, int *class_count_,
                                     unsigned int n_samples_,
                                     unsigned int n_classes_,
                                     unsigned int n_features_) {
@@ -52,8 +52,8 @@ __global__ void GaussianNBSumKernel(const double *d_data, const int *d_labels,
   return;
 }
 
-__global__ void GaussianNBMeanKernel(double *feature_means_, int *class_count_,
-                                     double *class_priors_,
+__global__ void GaussianNBMeanKernel(float *feature_means_, int *class_count_,
+                                     float *class_priors_,
                                      unsigned int n_samples_,
                                      unsigned int n_classes_,
                                      unsigned int n_features_) {
@@ -72,15 +72,15 @@ __global__ void GaussianNBMeanKernel(double *feature_means_, int *class_count_,
       // WARNING: thread divergence
       // Calculating Class priors
       if (feat_col == 0) {
-        class_priors_[i] = (double)class_count_[i] / n_samples_;
+        class_priors_[i] = (float)class_count_[i] / n_samples_;
       }
     }
   }
 }
 
-__global__ void GaussianNBVarKernel(const double *d_data, const int *d_labels,
-                                    const double *feature_means_,
-                                    double *feature_vars_,
+__global__ void GaussianNBVarKernel(const float *d_data, const int *d_labels,
+                                    const float *feature_means_,
+                                    float *feature_vars_,
                                     const int *class_count_,
                                     const unsigned int n_samples_,
                                     const unsigned int n_classes_,
@@ -108,15 +108,15 @@ __global__ void GaussianNBVarKernel(const double *d_data, const int *d_labels,
   }
 }
 
-void GaussianNB::train(vector<double> data, vector<int> labels) {
+void GaussianNB::train(vector<float> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
 
   // Move data and labels to GPU memory
   // NOTE: Memory Operation, put checks later
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(float),
              cudaMemcpyHostToDevice);
 
   // NOTE: Memory Operation, put checks later
@@ -139,10 +139,10 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
 
   /* Other initializations */
   cudaMallocManaged(&feature_means_,
-                    (n_classes_ * n_features_) * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
   cudaMallocManaged(&feature_vars_,
-                    (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&class_priors_, (n_classes_) * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&class_priors_, (n_classes_) * sizeof(float));
   cudaMallocManaged(&class_count_, n_classes_ * sizeof(int));
 
   /* Calculate the mean for each feature for each class
@@ -166,20 +166,20 @@ void GaussianNB::train(vector<double> data, vector<int> labels) {
   return;
 }
 
-__global__ void GaussianNBTestKernel(const double *d_data, const int *d_labels,
-                                     const double *feature_means_,
-                                     const double *feature_vars_,
-                                     const double *class_priors_, int test_size,
+__global__ void GaussianNBTestKernel(const float *d_data, const int *d_labels,
+                                     const float *feature_means_,
+                                     const float *feature_vars_,
+                                     const float *class_priors_, int test_size,
                                      int n_classes_, int n_features_,
                                      int *score) {
   /* Each thread will take one term */
   unsigned int tidx = threadIdx.x;
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
-  double prob_class = 0.0;
-  double max = 0;
+  float prob_class = 0.0;
+  float max = 0;
   int result = 0;
-  double coefficient = 0.0;
+  float coefficient = 0.0;
 
   if (sample_num < test_size) {        /* End condition check */
     for (i = 0; i < n_classes_; ++i) { /* For each class */
@@ -209,14 +209,14 @@ __global__ void GaussianNBTestKernel(const double *d_data, const int *d_labels,
   }
 }
 
-int GaussianNB::predict(vector<double> data, vector<int> labels) {
+int GaussianNB::predict(vector<float> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 0;
 
   /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(float),
              cudaMemcpyHostToDevice);
   int *d_labels;
   cudaMallocManaged(&d_labels, test_size * sizeof(int));
@@ -252,8 +252,8 @@ MultinomialNB::MultinomialNB() {}
 MultinomialNB::~MultinomialNB() {}
 
 __global__ void
-MultinomialNBCalcKernel(const double *d_data, const int *d_labels,
-                        double *feature_probs, double *class_priors,
+MultinomialNBCalcKernel(const float *d_data, const int *d_labels,
+                        float *feature_probs, float *class_priors,
                         unsigned int n_samples_, unsigned int n_classes_,
                         unsigned int n_features_) {
 
@@ -283,8 +283,8 @@ MultinomialNBCalcKernel(const double *d_data, const int *d_labels,
 
 /* Kernel divides each row by a number and takes log */
 __global__ void
-MultinomialNBLearnKernel(double *feature_probs, double *class_priors,
-                         const double *d_row_sums, unsigned int n_samples_,
+MultinomialNBLearnKernel(float *feature_probs, float *class_priors,
+                         const float *d_row_sums, unsigned int n_samples_,
                          unsigned int n_classes_, unsigned int n_features_) {
 
   /* Each thread will take one term */
@@ -300,25 +300,25 @@ MultinomialNBLearnKernel(double *feature_probs, double *class_priors,
           feature_probs[RM_Index(i, feat_col, n_features_)] / d_row_sums[i]);
 
       if (feat_col == 0) {
-        class_priors[i] = log(class_priors[i] / (double)n_samples_);
+        class_priors[i] = log(class_priors[i] / (float)n_samples_);
         printf("prior at %u = %lf\n", i, class_priors[i]);
       }
     }
   }
 }
 
-__global__ void MultinomialNBTestKernel(const double *d_data,
+__global__ void MultinomialNBTestKernel(const float *d_data,
                                         const int *d_labels,
-                                        const double *feature_probs,
-                                        const double *class_priors,
+                                        const float *feature_probs,
+                                        const float *class_priors,
                                         int test_size, int n_classes_,
                                         int n_features_, int *score) {
   /* Each thread will take one term */
   unsigned int tidx = threadIdx.x;
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
-  double prob_class = 0;
-  double max = 0;
+  float prob_class = 0;
+  float max = 0;
   int result = 0;
 
   if (sample_num < test_size) {
@@ -345,15 +345,15 @@ __global__ void MultinomialNBTestKernel(const double *d_data,
   return;
 }
 
-void MultinomialNB::train(vector<double> data, vector<int> labels) {
+void MultinomialNB::train(vector<float> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
 
   // Move data and labels to GPU memory
   // NOTE: Memory Operation, put checks later
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(float),
              cudaMemcpyHostToDevice);
 
   // NOTE: Memory Operation, put checks later
@@ -377,10 +377,10 @@ void MultinomialNB::train(vector<double> data, vector<int> labels) {
 
   /* Other initializations */
   cudaMallocManaged(&feature_probs,
-                    (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&class_priors, n_classes_ * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&class_priors, n_classes_ * sizeof(float));
   // Is the memset below required?
-  // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(double));
+  // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(float));
 
   /* Calculate frequency of occurence of each term : CalcKernel
   Individual thread for each term. Threads_per_block=1024 */
@@ -392,19 +392,19 @@ void MultinomialNB::train(vector<double> data, vector<int> labels) {
   cudaDeviceSynchronize();
 
   /* Learning Phase: Calculate conditional probabilities */
-  double *d_row_sums;
-  cudaMallocManaged(&d_row_sums, n_classes_ * sizeof(double));
+  float *d_row_sums;
+  cudaMallocManaged(&d_row_sums, n_classes_ * sizeof(float));
 
   /* Find total number of terms in each class */
   for (unsigned int i = 0; i < n_classes_; ++i) {
-    thrust::device_vector<double> temp_vec(feature_probs + (n_features_ * i),
+    thrust::device_vector<float> temp_vec(feature_probs + (n_features_ * i),
                                            feature_probs +
                                                (n_features_ * (i + 1)));
     d_row_sums[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
 
-  thrust::device_vector<double> temp_vec(d_row_sums, (d_row_sums + n_classes_));
+  thrust::device_vector<float> temp_vec(d_row_sums, (d_row_sums + n_classes_));
 
   MultinomialNBLearnKernel<<<blocks_per_grid, threads_per_block>>>(
       feature_probs, class_priors, d_row_sums, train_size, n_classes_,
@@ -414,14 +414,14 @@ void MultinomialNB::train(vector<double> data, vector<int> labels) {
   return;
 }
 
-int MultinomialNB::predict(vector<double> data, vector<int> labels) {
+int MultinomialNB::predict(vector<float> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 0;
 
   /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(float),
              cudaMemcpyHostToDevice);
   int *d_labels;
   cudaMallocManaged(&d_labels, test_size * sizeof(int));
@@ -453,9 +453,9 @@ int MultinomialNB::predict(vector<double> data, vector<int> labels) {
 
 // ***************************************************
 
-__global__ void BernoulliNBCalcKernel(const double *d_data, const int *d_labels,
-                                      double *feature_probs,
-                                      double *class_count_,
+__global__ void BernoulliNBCalcKernel(const float *d_data, const int *d_labels,
+                                      float *feature_probs,
+                                      float *class_count_,
                                       unsigned int n_samples_,
                                       unsigned int n_classes_,
                                       unsigned int n_features_) {
@@ -486,8 +486,8 @@ __global__ void BernoulliNBCalcKernel(const double *d_data, const int *d_labels,
 
 // Kernel divides each row by a number and takes log
 __global__ void
-BernoulliNBLearnKernel(double *feature_probs, double *class_count_,
-                       const double *d_row_sums, unsigned int n_samples_,
+BernoulliNBLearnKernel(float *feature_probs, float *class_count_,
+                       const float *d_row_sums, unsigned int n_samples_,
                        unsigned int n_classes_, unsigned int n_features_) {
 
   // Each thread will take one term
@@ -502,39 +502,37 @@ BernoulliNBLearnKernel(double *feature_probs, double *class_count_,
           class_count_[i]; // d_row_sums[i];
 
       if (feat_col == 0) {
-        class_count_[i] = class_count_[i] / (double)n_samples_;
+        class_count_[i] = class_count_[i] / (float)n_samples_;
         printf("prior at %u = %lf\n", i, class_count_[i]);
       }
     }
   }
 }
 
-__global__ void BernoulliNBTestKernel(const double *d_data, const int *d_labels,
-                                      const double *feature_probs,
-                                      const double *class_count_, int test_size,
+__global__ void BernoulliNBTestKernel(const float *d_data, const int *d_labels,
+                                      const float *feature_probs,
+                                      const float *class_count_, int test_size,
                                       int n_classes_, int n_features_,
                                       int *score) {
   // Each thread will take one term
   unsigned int tidx = threadIdx.x;
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
-  double prob_class = 0;
-  double max = 0;
+  float prob_class = 0;
+  float min = 0;
   int result = 0;
 
   if (sample_num < test_size) {
     for (i = 0; i < n_classes_; ++i) { // For each class
-      prob_class = class_count_[i];
+      prob_class = log(class_count_[i]);
 
       for (j = 0; j < n_features_; ++j) { // For each feature
-        prob_class *= pow(feature_probs[RM_Index(i, j, n_features_)],
-                          d_data[RM_Index(sample_num, j, n_features_)]);
-        prob_class *= pow((1 - feature_probs[RM_Index(i, j, n_features_)]),
-                          (1 - d_data[RM_Index(sample_num, j, n_features_)]));
+        prob_class += log(feature_probs[RM_Index(i, j, n_features_)])*d_data[RM_Index(sample_num, j, n_features_)];
+        prob_class += log((1 - feature_probs[RM_Index(i, j, n_features_)]))*(1 - d_data[RM_Index(sample_num, j, n_features_)]);
       }
 
-      if (max < prob_class) {
-        max = prob_class;
+      if (min > prob_class) {
+        min = prob_class;
         result = i;
       }
     }
@@ -554,15 +552,15 @@ BernoulliNB::BernoulliNB() {}
 
 BernoulliNB::~BernoulliNB() {}
 
-void BernoulliNB::train(vector<double> data, vector<int> labels) {
+void BernoulliNB::train(vector<float> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
 
   // Move data and labels to GPU memory
   // NOTE: Memory Operation, put checks later
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(float),
              cudaMemcpyHostToDevice);
 
   // NOTE: Memory Operation, put checks later
@@ -586,10 +584,10 @@ void BernoulliNB::train(vector<double> data, vector<int> labels) {
 
   /* Other initializations */
   cudaMallocManaged(&feature_probs,
-                    (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&class_count_, n_classes_ * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&class_count_, n_classes_ * sizeof(float));
   // Is the memset below required?
-  // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(double));
+  // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(float));
 
   /* Calculate frequency of occurence of each term : CalcKernel
   Individual thread for each term. Threads_per_block=1024 */
@@ -601,19 +599,19 @@ void BernoulliNB::train(vector<double> data, vector<int> labels) {
   cudaDeviceSynchronize();
 
   /* Learning Phase: Calculate conditional probabilities */
-  double *d_row_sums;
-  cudaMallocManaged(&d_row_sums, n_classes_ * sizeof(double));
+  float *d_row_sums;
+  cudaMallocManaged(&d_row_sums, n_classes_ * sizeof(float));
 
   /* Find total number of terms in each class */
   for (unsigned int i = 0; i < n_classes_; ++i) {
-    thrust::device_vector<double> temp_vec(feature_probs + (n_features_ * i),
+    thrust::device_vector<float> temp_vec(feature_probs + (n_features_ * i),
                                            feature_probs +
                                                (n_features_ * (i + 1)));
     d_row_sums[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
 
-  thrust::device_vector<double> temp_vec(d_row_sums, (d_row_sums + n_classes_));
+  thrust::device_vector<float> temp_vec(d_row_sums, (d_row_sums + n_classes_));
   cout << "class_count_ 0 " << class_count_[0] << " class_count_ 1 "
        << class_count_[1] << endl;
   BernoulliNBLearnKernel<<<blocks_per_grid, threads_per_block>>>(
@@ -624,14 +622,14 @@ void BernoulliNB::train(vector<double> data, vector<int> labels) {
   return;
 }
 
-int BernoulliNB::predict(vector<double> data, vector<int> labels) {
+int BernoulliNB::predict(vector<float> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 0;
 
   /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(float),
              cudaMemcpyHostToDevice);
   int *d_labels;
   cudaMallocManaged(&d_labels, test_size * sizeof(int));
@@ -669,8 +667,8 @@ ComplementNB ::ComplementNB() {}
 ComplementNB ::~ComplementNB() {}
 
 __global__ void
-ComplementNBCalcKernel(const double *d_data, const int *d_labels,
-                       double *per_class_feature_sum_, double *per_feature_sum_,
+ComplementNBCalcKernel(const float *d_data, const int *d_labels,
+                       float *per_class_feature_sum_, float *per_feature_sum_,
                        unsigned int n_samples_, unsigned int n_features_) {
 
   // Each thread will take care of one term for all docs
@@ -694,10 +692,10 @@ ComplementNBCalcKernel(const double *d_data, const int *d_labels,
   return;
 }
 
-__global__ void ComplementNBLearnKernel(double *feature_weights_,
-                                        double *per_class_feature_sum_,
-                                        double *per_feature_sum_,
-                                        double *per_class_sum_, double all_sum_,
+__global__ void ComplementNBLearnKernel(float *feature_weights_,
+                                        float *per_class_feature_sum_,
+                                        float *per_feature_sum_,
+                                        float *per_class_sum_, float all_sum_,
                                         unsigned int n_classes_,
                                         unsigned int n_features_) {
   // Each thread will take one feature
@@ -705,8 +703,8 @@ __global__ void ComplementNBLearnKernel(double *feature_weights_,
   int feat_col = tidx + (blockIdx.x * blockDim.x);
 
   unsigned int i = 0;
-  double den_sum = 0;
-  double num_sum = 0;
+  float den_sum = 0;
+  float num_sum = 0;
 
   if (feat_col < n_features_) {        /* Boundary check */
     for (i = 0; i < n_classes_; ++i) { /* For each class */
@@ -714,14 +712,13 @@ __global__ void ComplementNBLearnKernel(double *feature_weights_,
       num_sum = per_feature_sum_[feat_col] -
                 per_class_feature_sum_[RM_Index(i, feat_col, n_features_)];
 
-      feature_weights_[RM_Index(i, feat_col, n_features_)] =
-          log((num_sum + 1.0) / (den_sum + n_features_));
+      feature_weights_[RM_Index(i, feat_col, n_features_)] =log(num_sum + 1.0) -log(den_sum + n_features_);
     }
   }
 }
 
-__global__ void ComplementNBNormalizeKernel(double *feature_weights_,
-                                            double *per_class_sum_,
+__global__ void ComplementNBNormalizeKernel(float *feature_weights_,
+                                            float *per_class_sum_,
                                             unsigned int n_classes_,
                                             unsigned int n_features_) {
   // Each thread will take one feature
@@ -735,16 +732,16 @@ __global__ void ComplementNBNormalizeKernel(double *feature_weights_,
   }
 }
 
-__global__ void ComplementNBTestKernel(const double *d_data,
+__global__ void ComplementNBTestKernel(const float *d_data,
                                        const int *d_labels,
-                                       const double *feature_weights_,
+                                       const float *feature_weights_,
                                        int test_size, int n_classes_,
                                        int n_features_, int *score) {
   // Each thread will take one term
   unsigned int sample_num = threadIdx.x + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
-  double prob_class = 0.0;
-  double min = DBL_MAX;
+  float prob_class = 0.0;
+  float min = DBL_MAX;
   int result = 0;
 
   if (sample_num < test_size) { /* Boundary condition check */
@@ -755,7 +752,7 @@ __global__ void ComplementNBTestKernel(const double *d_data,
 
       for (j = 0; j < n_features_; ++j) { /* For each feature */
         prob_class += feature_weights_[RM_Index(i, j, n_features_)] *
-                      (double)d_data[RM_Index(sample_num, j, n_features_)];
+                      (float)d_data[RM_Index(sample_num, j, n_features_)];
       }
 
       if (min > prob_class) {
@@ -774,16 +771,16 @@ __global__ void ComplementNBTestKernel(const double *d_data,
   return;
 }
 
-void ComplementNB::train(vector<double> data, vector<int> labels) {
+void ComplementNB::train(vector<float> data, vector<int> labels) {
   unsigned int train_size = labels.size();
   n_features_ = data.size() / train_size;
   unsigned int i = 0;
 
   // Move data and labels to GPU memory
   // NOTE: Memory Operation, put checks later
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * train_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * train_size) * sizeof(float),
              cudaMemcpyHostToDevice);
 
   // NOTE: Memory Operation, put checks later
@@ -806,11 +803,11 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
 
   /* Other initializations */
   cudaMallocManaged(&per_class_feature_sum_,
-                    (n_classes_ * n_features_) * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
   cudaMallocManaged(&feature_weights_,
-                    (n_classes_ * n_features_) * sizeof(double));
-  cudaMallocManaged(&per_feature_sum_, (n_features_) * sizeof(double));
-  cudaMallocManaged(&per_class_sum_, (n_classes_) * sizeof(double));
+                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&per_feature_sum_, (n_features_) * sizeof(float));
+  cudaMallocManaged(&per_class_sum_, (n_classes_) * sizeof(float));
 
   /* Calculate frequency of occurence of each term : CalcKernel
   Individual thread for each term. Threads_per_block=1024 */
@@ -826,7 +823,7 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
   Typically we have many more features than classes, so it may not be worth
   launching a separate kernel for it */
   for (i = 0; i < n_classes_; ++i) {
-    thrust::device_vector<double> temp_vec(
+    thrust::device_vector<float> temp_vec(
         per_class_feature_sum_ + (n_features_ * i),
         per_class_feature_sum_ + (n_features_ * (i + 1)));
     per_class_sum_[i] =
@@ -834,9 +831,9 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
   }
 
   /* Find ALL occurences in the dataset */
-  thrust::device_vector<double> temp_vec(per_class_sum_,
+  thrust::device_vector<float> temp_vec(per_class_sum_,
                                          per_class_sum_ + n_classes_);
-  double all_sum_ =
+  float all_sum_ =
       thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
 
   /* Learning Phase: Calculate weights per feature per class */
@@ -847,7 +844,7 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
   /* Normalize Phase for stable coefficients.
   Reuse per_class_sum_ variable */
   for (i = 0; i < n_classes_; ++i) {
-    thrust::device_vector<double> temp_vec(feature_weights_ + (n_features_ * i),
+    thrust::device_vector<float> temp_vec(feature_weights_ + (n_features_ * i),
                                            feature_weights_ +
                                                (n_features_ * (i + 1)));
     per_class_sum_[i] =
@@ -862,14 +859,14 @@ void ComplementNB::train(vector<double> data, vector<int> labels) {
   return;
 }
 
-int ComplementNB::predict(vector<double> data, vector<int> labels) {
+int ComplementNB::predict(vector<float> data, vector<int> labels) {
   std::vector<int>::size_type test_size = labels.size();
   int total_score = 0;
 
   /* Moving test data to the device */
-  double *d_data;
-  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(double));
-  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(double),
+  float *d_data;
+  cudaMallocManaged(&d_data, (n_features_ * test_size) * sizeof(float));
+  cudaMemcpy(d_data, &data[0], (n_features_ * test_size) * sizeof(float),
              cudaMemcpyHostToDevice);
   int *d_labels;
   cudaMallocManaged(&d_labels, test_size * sizeof(int));
