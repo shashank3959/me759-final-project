@@ -520,7 +520,7 @@ __global__ void BernoulliNBTestKernel(const float *d_data, const int *d_labels,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   float prob_class = 0;
-  float min = 0;
+  float max = -FLT_MAX;
   int result = 0;
 
   if (sample_num < test_size) {
@@ -532,8 +532,8 @@ __global__ void BernoulliNBTestKernel(const float *d_data, const int *d_labels,
         prob_class += log((1 - feature_probs[RM_Index(i, j, n_features_)]))*(1 - d_data[RM_Index(sample_num, j, n_features_)]);
       }
 
-      if (min > prob_class) {
-        min = prob_class;
+      if (max < prob_class) {
+        max = prob_class;
         result = i;
       }
     }
@@ -646,7 +646,7 @@ int BernoulliNB::predict(vector<float> data, vector<int> labels) {
 
   dim3 threads_per_block(THREADS_PER_BLOCK);
   dim3 blocks_per_grid(ceil(float(test_size) / float(threads_per_block.x)));
-  MultinomialNBTestKernel<<<blocks_per_grid, threads_per_block>>>(
+  BernoulliNBTestKernel<<<blocks_per_grid, threads_per_block>>>(
       d_data, d_labels, feature_probs, class_count_, test_size, n_classes_,
       n_features_, score);
   cudaDeviceSynchronize();
