@@ -295,9 +295,10 @@ MultinomialNBLearnKernel(float *feature_probs, float *class_priors,
   if (feat_col < n_features_) { /* End condition check */
     /* For each label */
     for (i = 0; i < n_classes_; ++i) {
-      // TODO: Add Laplace Smoothing
+      // Alpha is default set to 1.0 for laplacian smoothing
       feature_probs[RM_Index(i, feat_col, n_features_)] = log(
-          feature_probs[RM_Index(i, feat_col, n_features_)] / d_row_sums[i]);
+          (feature_probs[RM_Index(i, feat_col, n_features_)] + 1.0) /
+          (d_row_sums[i] - (n_features_ * 1.0)));
 
       if (feat_col == 0) {
         class_priors[i] = log(class_priors[i] / (float)n_samples_);
@@ -317,7 +318,7 @@ __global__ void MultinomialNBTestKernel(const float *d_data,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   float prob_class = 0;
-  float max = 0;
+  float max = -FLT_MAX;
   int result = 0;
 
   if (sample_num < test_size) {
@@ -449,6 +450,7 @@ int MultinomialNB::predict(vector<float> data, vector<int> labels) {
 
   return total_score;
 }
+
 
 // ***************************************************
 
