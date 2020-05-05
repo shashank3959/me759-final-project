@@ -177,7 +177,7 @@ __global__ void GaussianNBTestKernel(const float *d_data, const int *d_labels,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   float prob_class = 0.0;
-  float max = 0;
+  float max = -FLT_MAX;;
   int result = 0;
   float coefficient = 0.0;
 
@@ -742,7 +742,7 @@ __global__ void ComplementNBTestKernel(const float *d_data,
   unsigned int sample_num = threadIdx.x + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   float prob_class = 0.0;
-  float min = DBL_MAX;
+  float min = FLT_MAX;
   int result = 0;
 
   if (sample_num < test_size) { /* Boundary condition check */
