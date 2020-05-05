@@ -301,7 +301,6 @@ MultinomialNBLearnKernel(float *feature_probs, float *class_priors,
 
       if (feat_col == 0) {
         class_priors[i] = log(class_priors[i] / (float)n_samples_);
-        printf("prior at %u = %lf\n", i, class_priors[i]);
       }
     }
   }

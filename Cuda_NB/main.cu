@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   3: ComplementNB
   */
   int algoID = atoi(argv[1]);
-  cout<<"algoID"<<algoID <<endl;
+  cout<<"Selected algoID: "<<algoID <<endl;
   vector<float> X_train;
   vector<float> X_test;
   vector<int> Y_train;
@@ -100,51 +100,51 @@ int main(int argc, char *argv[]) {
 
   if (algoID == 0) {
     /* GaussianNB */
-    //#pragma omp parallel sections
-    //{
-      //#pragma omp section
-      X_train = Load_State_1D("./train_states.csv", n_rows_train);
+    #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../data/train_states.csv", n_rows_train);
 
-      //#pragma omp section
-      X_test = Load_State_1D("./test_states.csv", n_rows_test);
+      #pragma omp section
+      X_test = Load_State_1D("../data/test_states.csv", n_rows_test);
 
-      //#pragma omp section
-      Y_train = Load_Label("./train_labels.csv");
+      #pragma omp section
+      Y_train = Load_Label("../data/train_labels.csv");
 
-      //#pragma omp section
-      Y_test = Load_Label("./test_labels.csv");
-    //}
+      #pragma omp section
+      Y_test = Load_Label("../data/test_labels.csv");
+    }
   } else if (algoID == 1) {
     /* BernoulliNB */
-   // #pragma omp parallel sections
-    //{
-      //#pragma omp section
-      X_train = Load_State_1D("./X_train_onehot.csv", n_rows_train);
+   #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../data/X_train_onehot.csv", n_rows_train);
 
-      //#pragma omp section
-      X_test = Load_State_1D("./X_test_onehot.csv", n_rows_test);
+      #pragma omp section
+      X_test = Load_State_1D("../data/X_test_onehot.csv", n_rows_test);
 
-      //#pragma omp section
-      Y_train = Load_Label("./y_train_onehot.csv");
+      #pragma omp section
+      Y_train = Load_Label("../data/y_train_onehot.csv");
 
-      //#pragma omp section
-      Y_test = Load_Label("./y_test_onehot.csv");
+      #pragma omp section
+      Y_test = Load_Label("../data/y_test_onehot.csv");
     //}
   } else if (algoID == 2 || algoID == 3) {
     /* MultinomialNB  or ComplementNB */
-  //  #pragma omp parallel sections
-    //{
-      //#pragma omp section
-      X_train = Load_State_1D("./X_train_bow.csv", n_rows_train);
+   #pragma omp parallel sections
+    {
+      #pragma omp section
+      X_train = Load_State_1D("../data/X_train_bow.csv", n_rows_train);
 
-      //#pragma omp section
-      X_test = Load_State_1D("./X_test_bow.csv", n_rows_test);
+      #pragma omp section
+      X_test = Load_State_1D("../data/X_test_bow.csv", n_rows_test);
 
-      //#pragma omp section
-      Y_train = Load_Label("./y_train_bow.csv");
+      #pragma omp section
+      Y_train = Load_Label("../data/y_train_bow.csv");
 
-      //#pragma omp section
-      Y_test = Load_Label("./y_test_bow.csv");
+      #pragma omp section
+      Y_test = Load_Label("../data/y_test_bow.csv");
     //}
   }
 
