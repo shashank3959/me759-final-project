@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
   if (algoID == 0) {
 
 
-    cout << "Training GaussianNB classifier" << endl;
+    cout << "Training Gaussian Naive Bayes classifier" << endl;
     GaussianNB model = GaussianNB();
 
     for(i = 0; i < RUN_COUNT; i++)
@@ -161,15 +161,21 @@ int main(int argc, char *argv[]) {
       duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
       tt+=duration_sec.count();
     }
+    cout << "Testing..." << endl;
+    cout << "Training time: " << tt/RUN_COUNT << " ms" << endl;
 
-    cout << "Training time " << tt/RUN_COUNT << endl;
+    start = high_resolution_clock::now();
     score = model.predict(X_test, Y_test);
+    end = high_resolution_clock::now();
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    cout << "Testing time: " << duration_sec.count() << " ms" << endl;
+
     fraction_correct = float(score) / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
 
     } else if (algoID == 1) {
     /* BernoulliNB */
-    cout<<"Training a Bernoulli NB classifier"<<endl;
+    cout<<"Training a Bernoulli Naive Bayes classifier"<<endl;
     BernoulliNB model = BernoulliNB();
 
     for( i = 0; i < RUN_COUNT; i++)
@@ -181,14 +187,21 @@ int main(int argc, char *argv[]) {
       tt+=duration_sec.count();
     }
 
-    cout << "Training time " << tt/RUN_COUNT<< endl;
+    cout << "Training time: " << tt/RUN_COUNT << " ms" << endl;
+    cout << "Testing..." << endl;
+    start = high_resolution_clock::now();
     score = model.predict(X_test, Y_test);
+    end = high_resolution_clock::now();
+
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    cout << "Testing time: " << duration_sec.count() << " ms" << endl;
+
     fraction_correct = float (score) / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
 
   } else if (algoID == 2) {
     /* MultinomialNB */
-    cout<<"Training a Multinomial NB classifier"<<endl;
+    cout<<"Training a Multinomial Naive Bayes classifier"<<endl;
     MultinomialNB model = MultinomialNB();
 
     for( i = 0; i < RUN_COUNT; i++)
@@ -200,14 +213,22 @@ int main(int argc, char *argv[]) {
       tt += duration_sec.count();
     }
 
-    cout << "Training time " << tt/RUN_COUNT << endl;
+    cout << "Training time: " << tt/RUN_COUNT << " ms" << endl;
+
+    cout << "Testing..." << endl;
+    start = high_resolution_clock::now();
     score = model.predict(X_test, Y_test);
+    end = high_resolution_clock::now();
+
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    cout << "Testing time: " << duration_sec.count() << " ms" << endl;
+
     fraction_correct = (float) score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
 
  } else if (algoID == 3) {
     /* ComplementNB */
-    cout<<"Training a ComplementNB classifier"<<endl;
+    cout<<"Training a Complement Naive Bayes classifier"<<endl;
     ComplementNB model = ComplementNB();
 
     for( i = 0; i < RUN_COUNT; i++)
@@ -219,8 +240,16 @@ int main(int argc, char *argv[]) {
       tt += duration_sec.count();
     }
 
-    cout << "Training time " << tt/RUN_COUNT<< endl;
+    cout << "Training time: " << tt/RUN_COUNT << " ms" << endl;
+
+    cout << "Testing..." << endl;
+    start = high_resolution_clock::now();
     score = model.predict(X_test, Y_test);
+    end = high_resolution_clock::now();
+
+    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+    cout << "Testing time: " << duration_sec.count() << " ms" << endl;
+
     fraction_correct = (float)score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
   }

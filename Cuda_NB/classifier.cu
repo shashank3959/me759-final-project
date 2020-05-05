@@ -177,7 +177,6 @@ __global__ void GaussianNBTestKernel(const float *d_data, const int *d_labels,
   unsigned int i = 0, j = 0;
   float prob_class = 0.0;
   float max = -FLT_MAX;
-  ;
   int result = 0;
   float coefficient = 0.0;
 
