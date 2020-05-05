@@ -144,18 +144,18 @@ if __name__=="__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--algoID", help="choose naive_bayes algorithm variant")
 	args = parser.parse_args()
-	print("AlgoID is:", args.algoID)
+	print("Chosen algoID is: ", args.algoID)
 
-	if args.algoID == "1" or "2" or "3" or "4":
-		if args.algoID!= "1":
+	if args.algoID in ["1", "2", "3", "4"]:
+		if args.algoID != "1":
 			X,target = cleanData()
 			save_file(X,target,args.algoID)
+			print("Successfully preprocessed the movie reviews")
 		else:
 			X,target =[],[]
 			save_file(X,target,args.algoID)
+			print("Successfully preprocessed the Iris Dataset")
 
 	else:
 		print("Invalid algoID")
 		sys.exit()
-
-	print("Successfully preprocessed the movie reviews")
