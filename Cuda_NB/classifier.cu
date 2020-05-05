@@ -140,8 +140,7 @@ void GaussianNB::train(vector<float> data, vector<int> labels) {
   /* Other initializations */
   cudaMallocManaged(&feature_means_,
                     (n_classes_ * n_features_) * sizeof(float));
-  cudaMallocManaged(&feature_vars_,
-                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&feature_vars_, (n_classes_ * n_features_) * sizeof(float));
   cudaMallocManaged(&class_priors_, (n_classes_) * sizeof(float));
   cudaMallocManaged(&class_count_, n_classes_ * sizeof(int));
 
@@ -177,7 +176,8 @@ __global__ void GaussianNBTestKernel(const float *d_data, const int *d_labels,
   unsigned int sample_num = tidx + (blockIdx.x * blockDim.x);
   unsigned int i = 0, j = 0;
   float prob_class = 0.0;
-  float max = -FLT_MAX;;
+  float max = -FLT_MAX;
+  ;
   int result = 0;
   float coefficient = 0.0;
 
@@ -296,9 +296,9 @@ MultinomialNBLearnKernel(float *feature_probs, float *class_priors,
     /* For each label */
     for (i = 0; i < n_classes_; ++i) {
       // Alpha is default set to 1.0 for laplacian smoothing
-      feature_probs[RM_Index(i, feat_col, n_features_)] = log(
-          (feature_probs[RM_Index(i, feat_col, n_features_)] + 1.0) /
-          (d_row_sums[i] - (n_features_ * 1.0)));
+      feature_probs[RM_Index(i, feat_col, n_features_)] =
+          log((feature_probs[RM_Index(i, feat_col, n_features_)] + 1.0) /
+              (d_row_sums[i] - (n_features_ * 1.0)));
 
       if (feat_col == 0) {
         class_priors[i] = log(class_priors[i] / (float)n_samples_);
@@ -376,8 +376,7 @@ void MultinomialNB::train(vector<float> data, vector<int> labels) {
              n_classes_ * sizeof(int), cudaMemcpyHostToDevice);
 
   /* Other initializations */
-  cudaMallocManaged(&feature_probs,
-                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&feature_probs, (n_classes_ * n_features_) * sizeof(float));
   cudaMallocManaged(&class_priors, n_classes_ * sizeof(float));
   // Is the memset below required?
   // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(float));
@@ -398,8 +397,8 @@ void MultinomialNB::train(vector<float> data, vector<int> labels) {
   /* Find total number of terms in each class */
   for (unsigned int i = 0; i < n_classes_; ++i) {
     thrust::device_vector<float> temp_vec(feature_probs + (n_features_ * i),
-                                           feature_probs +
-                                               (n_features_ * (i + 1)));
+                                          feature_probs +
+                                              (n_features_ * (i + 1)));
     d_row_sums[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
@@ -451,12 +450,10 @@ int MultinomialNB::predict(vector<float> data, vector<int> labels) {
   return total_score;
 }
 
-
 // ***************************************************
 
 __global__ void BernoulliNBCalcKernel(const float *d_data, const int *d_labels,
-                                      float *feature_probs,
-                                      float *class_count_,
+                                      float *feature_probs, float *class_count_,
                                       unsigned int n_samples_,
                                       unsigned int n_classes_,
                                       unsigned int n_features_) {
@@ -528,8 +525,10 @@ __global__ void BernoulliNBTestKernel(const float *d_data, const int *d_labels,
       prob_class = log(class_count_[i]);
 
       for (j = 0; j < n_features_; ++j) { // For each feature
-        prob_class += log(feature_probs[RM_Index(i, j, n_features_)])*d_data[RM_Index(sample_num, j, n_features_)];
-        prob_class += log((1 - feature_probs[RM_Index(i, j, n_features_)]))*(1 - d_data[RM_Index(sample_num, j, n_features_)]);
+        prob_class += log(feature_probs[RM_Index(i, j, n_features_)]) *
+                      d_data[RM_Index(sample_num, j, n_features_)];
+        prob_class += log((1 - feature_probs[RM_Index(i, j, n_features_)])) *
+                      (1 - d_data[RM_Index(sample_num, j, n_features_)]);
       }
 
       if (max < prob_class) {
@@ -584,8 +583,7 @@ void BernoulliNB::train(vector<float> data, vector<int> labels) {
              n_classes_ * sizeof(int), cudaMemcpyHostToDevice);
 
   /* Other initializations */
-  cudaMallocManaged(&feature_probs,
-                    (n_classes_ * n_features_) * sizeof(float));
+  cudaMallocManaged(&feature_probs, (n_classes_ * n_features_) * sizeof(float));
   cudaMallocManaged(&class_count_, n_classes_ * sizeof(float));
   // Is the memset below required?
   // cudaMemset(feature_probs, 0, (n_classes_ * n_features_) * sizeof(float));
@@ -606,8 +604,8 @@ void BernoulliNB::train(vector<float> data, vector<int> labels) {
   /* Find total number of terms in each class */
   for (unsigned int i = 0; i < n_classes_; ++i) {
     thrust::device_vector<float> temp_vec(feature_probs + (n_features_ * i),
-                                           feature_probs +
-                                               (n_features_ * (i + 1)));
+                                          feature_probs +
+                                              (n_features_ * (i + 1)));
     d_row_sums[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
@@ -667,10 +665,11 @@ ComplementNB ::ComplementNB() {}
 
 ComplementNB ::~ComplementNB() {}
 
-__global__ void
-ComplementNBCalcKernel(const float *d_data, const int *d_labels,
-                       float *per_class_feature_sum_, float *per_feature_sum_,
-                       unsigned int n_samples_, unsigned int n_features_) {
+__global__ void ComplementNBCalcKernel(const float *d_data, const int *d_labels,
+                                       float *per_class_feature_sum_,
+                                       float *per_feature_sum_,
+                                       unsigned int n_samples_,
+                                       unsigned int n_features_) {
 
   // Each thread will take care of one term for all docs
   unsigned int tidx = threadIdx.x;
@@ -713,7 +712,8 @@ __global__ void ComplementNBLearnKernel(float *feature_weights_,
       num_sum = per_feature_sum_[feat_col] -
                 per_class_feature_sum_[RM_Index(i, feat_col, n_features_)];
 
-      feature_weights_[RM_Index(i, feat_col, n_features_)] =log(num_sum + 1.0) -log(den_sum + n_features_);
+      feature_weights_[RM_Index(i, feat_col, n_features_)] =
+          log(num_sum + 1.0) - log(den_sum + n_features_);
     }
   }
 }
@@ -733,8 +733,7 @@ __global__ void ComplementNBNormalizeKernel(float *feature_weights_,
   }
 }
 
-__global__ void ComplementNBTestKernel(const float *d_data,
-                                       const int *d_labels,
+__global__ void ComplementNBTestKernel(const float *d_data, const int *d_labels,
                                        const float *feature_weights_,
                                        int test_size, int n_classes_,
                                        int n_features_, int *score) {
@@ -833,7 +832,7 @@ void ComplementNB::train(vector<float> data, vector<int> labels) {
 
   /* Find ALL occurences in the dataset */
   thrust::device_vector<float> temp_vec(per_class_sum_,
-                                         per_class_sum_ + n_classes_);
+                                        per_class_sum_ + n_classes_);
   float all_sum_ =
       thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
 
@@ -846,8 +845,8 @@ void ComplementNB::train(vector<float> data, vector<int> labels) {
   Reuse per_class_sum_ variable */
   for (i = 0; i < n_classes_; ++i) {
     thrust::device_vector<float> temp_vec(feature_weights_ + (n_features_ * i),
-                                           feature_weights_ +
-                                               (n_features_ * (i + 1)));
+                                          feature_weights_ +
+                                              (n_features_ * (i + 1)));
     per_class_sum_[i] =
         thrust::reduce(thrust::device, temp_vec.begin(), temp_vec.end());
   }
