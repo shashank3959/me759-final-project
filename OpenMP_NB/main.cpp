@@ -12,6 +12,8 @@ using std::cout;
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
+#define RUN_COUNT 1
+
 vector<vector<float>> Load_State(string file_name) {
   ifstream in_state_(file_name.c_str(), ifstream::in);
   vector<vector<float>> state_out;
@@ -151,34 +153,35 @@ int main(int argc, char *argv[]) {
     cout << "Training GaussianNB classifier" << endl;
     GaussianNB model = GaussianNB();
 
-    for(i=0;i<10;i++)
+    for(i = 0; i < RUN_COUNT; i++)
     {
-    start = high_resolution_clock::now();
-    model.train(X_train, Y_train);
-    end = high_resolution_clock::now();
-    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
-    tt+=duration_sec.count();
+      start = high_resolution_clock::now();
+      model.train(X_train, Y_train);
+      end = high_resolution_clock::now();
+      duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+      tt+=duration_sec.count();
     }
 
-    cout << "Training time " << tt/10 << endl;
+    cout << "Training time " << tt/RUN_COUNT << endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = float(score) / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
 
-  } else if (algoID == 1) {
+    } else if (algoID == 1) {
     /* BernoulliNB */
     cout<<"Training a Bernoulli NB classifier"<<endl;
     BernoulliNB model = BernoulliNB();
-    for(i=0;i<10;i++)
-   {
-    start = high_resolution_clock::now();
-    model.train(X_train, Y_train);
-    end = high_resolution_clock::now();
-    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
-    tt+=duration_sec.count();
-   }
 
-    cout << "Training time " << tt/10<< endl;
+    for( i = 0; i < RUN_COUNT; i++)
+    {
+      start = high_resolution_clock::now();
+      model.train(X_train, Y_train);
+      end = high_resolution_clock::now();
+      duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+      tt+=duration_sec.count();
+    }
+
+    cout << "Training time " << tt/RUN_COUNT<< endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = float (score) / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
@@ -188,16 +191,16 @@ int main(int argc, char *argv[]) {
     cout<<"Training a Multinomial NB classifier"<<endl;
     MultinomialNB model = MultinomialNB();
 
-   for(int i=0;i<10;i++)
+    for( i = 0; i < RUN_COUNT; i++)
     {
-    start = high_resolution_clock::now();
-    model.train(X_train, Y_train);
-    end = high_resolution_clock::now();
-    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
-    tt+=duration_sec.count();
+      start = high_resolution_clock::now();
+      model.train(X_train, Y_train);
+      end = high_resolution_clock::now();
+      duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
+      tt += duration_sec.count();
     }
 
-    cout << "Training time " << tt/10<< endl;
+    cout << "Training time " << tt/RUN_COUNT << endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = (float) score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
@@ -207,17 +210,16 @@ int main(int argc, char *argv[]) {
     cout<<"Training a ComplementNB classifier"<<endl;
     ComplementNB model = ComplementNB();
 
-   for(i=0;i<10;i++)
-   {
-    start = high_resolution_clock::now();
-    model.train(X_train, Y_train);
-    end = high_resolution_clock::now();
-    duration_sec = std::chrono::duration_cast<duration<float, std::milli>>(end - start);
-    tt+=duration_sec.count();
+    for( i = 0; i < RUN_COUNT; i++)
+    {
+      start = high_resolution_clock::now();
+      model.train(X_train, Y_train);
+      end = high_resolution_clock::now();
+      duration_sec = std::chrono::duration_cast<duration<float, std::milli>>(end - start);
+      tt += duration_sec.count();
+    }
 
-   }
-
-    cout << "Training time " << tt/10<< endl;
+    cout << "Training time " << tt/RUN_COUNT<< endl;
     score = model.predict(X_test, Y_test);
     fraction_correct = (float)score / Y_test.size();
     cout << "Model Accuracy " << (100 * fraction_correct) << "%" << endl;
