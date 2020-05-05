@@ -69,5 +69,6 @@ For GaussianNB, we used the Iris dataset which is already in numerical format so
 2. sbatch NBopenmp.sh
 
 ### CUDA
-1. Go to the Cuda\_NB folder <br>
-2. sbatch NBcuda.sh
+1. Load the CUDA module using "module load cuda/10.0"
+2. Go to the Cuda\_NB folder <br>
+3. sbatch NBcuda.sh
