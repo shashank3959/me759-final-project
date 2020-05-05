@@ -9,8 +9,7 @@
 cd $SLURM_SUBMIT_DIR
 module load cuda/10
 
-
-nvcc classifier.cu main.cu -Xcompiler -O3 -Xcompiler -Wall -Xptxas -O3 -o NBvariant
+nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -Xptxas -O3 -o NBvariant
 
 ./NBvariant 3
 
