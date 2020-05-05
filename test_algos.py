@@ -1,10 +1,10 @@
 '''
   Command to run the script: python main.py --algoID 1
   Choose algoID
-  1 for GaussianNB
-  2 for BernoulliNB
-  3 for MultinomialNB
-  4 for ComplementNB
+  0 for GaussianNB
+  1 for BernoulliNB
+  2 for MultinomialNB
+  3 for ComplementNB
 
 '''
 from sklearn.naive_bayes import MultinomialNB
@@ -19,7 +19,7 @@ import numpy as np
 
 def train_test(ID):
 
-	if ID== "1":
+	if ID== "0":
 
 		gnb = GaussianNB()
 
@@ -44,7 +44,7 @@ def train_test(ID):
 
 		print("GaussianNB model accuracy :",accuracy_score(Y_test, pred))
 
-	elif ID == "2":
+	elif ID == "1":
 
 		clf = BernoulliNB()
 
@@ -70,7 +70,7 @@ def train_test(ID):
 		print("BernoulliNB model accuracy :", accuracy_score(Y_test, pred))
 
 
-	elif ID == "3":
+	elif ID == "2":
 		clf = MultinomialNB()
 
 		#load data
@@ -95,7 +95,7 @@ def train_test(ID):
 
 		print("MultinomialNB model accuracy :",accuracy_score(Y_test, pred))
 
-	elif ID == "4":
+	elif ID == "3":
 		clf = ComplementNB()
 
 		#load data

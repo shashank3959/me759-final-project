@@ -38,18 +38,21 @@ and run the data preprocessing step using (change algoID to generated dataset fo
 ```
 python preprocessData.py --algoID 2
 ```
-### Functionality check
+# Functionality check
 In order to check the functionality of our C++ implementation of Naive Bayes variants, we also run the Python machine learning package scikit-learn to compare our accuracy on the test set. For example, to test ComplementNB use algoID 4 <br>
 
 ## Running on Euler
 Change the algoID variable in the file name checkFunctionality.sh and run the script using the following command and view in the accuracy in the log file.
-
+Make sure all the requirements are installed in "requirements.txt" before
+running this test.
 ```
+pip3 install --user -r requirements.txt
+
 sbatch checkFunctionality.sh
 ```
 ## Running on Windows/Mac
 ```
-python main.py --algoID 4
+python test_algos.py --algoID 4
 ```
 
 <br>
