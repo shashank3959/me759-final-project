@@ -22,7 +22,7 @@ If you do this step, you need not pre-process your data!
 bash download_dataset.sh
 
 ```
-Note: Paste all the CSV files in the data folder if in case if you find the files in the main folder instead of data folder.
+Note: Paste all the CSV files in the data folder if in case if you find the files in the main folder instead of data folder. <br>
 Choose [y] anywhere if asked to replace old files.
 
 ### Preprocess your own data (Option 2)
