@@ -21,6 +21,7 @@ If you do this step, you need not pre-process your data!
 ```
 bash download_dataset.sh
 ```
+Choose [y] anywhere if asked to replace old files.
 
 ### Preprocess your own data (Option 2)
 This is in case you don't like to download random files from the internet...we can understand.
@@ -42,7 +43,7 @@ pip3 install -r requirements.txt
 ```
 python preprocessData.py --algoID 2
 ```
-**Note that this may take 30-40 minutes for algos Bernoulli, Multinomial and Complement**. It will create .csv files in the data folder. It is taking a long time since we are storing a huge matrix in CSV file and in this project we are more concenered on the HPC using CUDA and OpenMP rather than data preprocessing data so feel free to use download_dataset.sh to fetch the data. 
+**Note that this may take 30-40 minutes for algos Bernoulli, Multinomial and Complement**. It will create .csv files in the data folder. It is taking a long time since we are storing a huge matrix in CSV file and in this project we are more concenered on the HPC using CUDA and OpenMP rather than data preprocessing data so feel free to use download_dataset.sh to fetch the data.
 
 ---
 #### Running on Windows/Mac
@@ -89,6 +90,8 @@ You may go into the \*.sh script to choose which variant you wish to run. For in
 | Multinomial         | IMDb (Movie Sentiment Classification) | 2      |
 | Complement          | IMDb (Movie Sentiment Classification) | 3      |
 
+The results will be generated in a \*-<jobid>-.out file in the same folder.
+
 ---
 ### Running on Windows/Mac/Ubuntu
 #### OpenMP accelerated version
@@ -126,13 +129,15 @@ Example:
 In order to check the functionality of our C++ implementation of Naive Bayes variants, we also run the Python machine learning package scikit-learn to compare our accuracy on the test set. For example, to test ComplementNB use algoID 4 <br>
 
 ### Running on Euler
-Install packages if you have not already done by the following the steps above and change the algoID variable in the following command and view in the accuracy in the log file.
+Install packages if you have not already done by the following the steps above and change the algoID variable in the following command.
 
 ```
 pip3 install --user -r requirements.txt
 
-python test_algos.py --algoID 4 
+python test_algos.py --algoID 4
 ```
+
+`NOTE`: Please use a SLURM script here if you aren't to run this directly on Euler!
 
 ---
 ### Running on Windows/Mac/Ubuntu
