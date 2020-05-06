@@ -125,7 +125,7 @@ running this test.
 ```
 pip3 install --user -r requirements.txt
 
-sbatch checkFunctionality.sh
+python test_algos.py --algoID 4 
 ```
 
 ---
