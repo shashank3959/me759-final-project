@@ -42,7 +42,7 @@ pip3 install --user -r requirements.txt
 ```
 sbatch preprocessData.sh
 ```
-**Note that this may take 30-40 minutes for algos Bernoulli, Multinomial and Complement**. It will create .csv files in the data folder
+**Note that this may take 30-40 minutes for algos Bernoulli, Multinomial and Complement**. It will create .csv files in the data folder. It is taking a long time since we are storing a huge matrix in CSV file and in this project we are more concenered on the HPC using CUDA and OpenMP rather than data preprocessing data so feel free to use download_dataset.sh to fetch the data. 
 
 ---
 #### Running on Windows/Mac
