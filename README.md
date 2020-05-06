@@ -134,7 +134,7 @@ Install packages if you have not already done by the following the steps above a
 ```
 pip3 install --user -r requirements.txt
 
-python test_algos.py --algoID 4
+python test_algos.py --algoID 2
 ```
 
 `NOTE`: Please use a SLURM script here if you aren't to run this directly on Euler!
@@ -142,6 +142,6 @@ python test_algos.py --algoID 4
 ---
 ### Running on Windows/Mac/Ubuntu
 ```
-python test_algos.py --algoID 4
+python test_algos.py --algoID 2
 ```
 ---
