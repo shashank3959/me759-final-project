@@ -99,6 +99,9 @@ g++ -std=c++0x main.cpp classifier.cpp -Wall -O3 -o OpenMP_NB -fopenmp
 
 ./OpenMP_NB #algoID
 
+Example: 
+
+./OpenMP_NB 4 
 ```
 
 #### CUDA accelerated version
@@ -108,6 +111,10 @@ g++ -std=c++0x main.cpp classifier.cpp -Wall -O3 -o OpenMP_NB -fopenmp
 nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -Xptxas -O3 -o CudaNB
 
 ./CudaNB #algoID
+
+Example: 
+
+./CudaNB 4 
 
 ```
 
