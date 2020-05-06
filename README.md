@@ -26,21 +26,21 @@ bash download_dataset.sh
 This is in case you don't like to download random files from the internet...we can understand.
 
 #### Running on Euler or a Linux based system
-In order to run the Data Preprocessing python script on Euler, please follow this link to install anaconda on Euler [here](https://wacc.wisc.edu/resources/docs/thirdparty.html) to install python and follow these change the algoID variable to the following options to create a data-set for that particular algorithm,
+In order to run the Data Preprocessing python script on Euler, please follow this link to install anaconda on Euler [here](https://wacc.wisc.edu/resources/docs/thirdparty.html) to install python and change the algoID variable to the following options to create a data-set for that particular algorithm,
 
 * --algoID 1 for GaussianNB <br>
 * --algoID 2 for BernoulliNB <br>
 * --algoID 3 for MultinomialNB <br>
 * --algoID 4 for ComplementNB <br>
 
-1. install all dependencies using <br>
+1. Install all dependencies using <br>
 ```
-python preprocessData.py --algoID 2
+pip3 install -r requirements.txt
 ```
 
-2. run the script using <br>
+2. Run the script using <br>
 ```
-sbatch preprocessData.sh
+python preprocessData.py --algoID 2
 ```
 **Note that this may take 30-40 minutes for algos Bernoulli, Multinomial and Complement**. It will create .csv files in the data folder. It is taking a long time since we are storing a huge matrix in CSV file and in this project we are more concenered on the HPC using CUDA and OpenMP rather than data preprocessing data so feel free to use download_dataset.sh to fetch the data. 
 
