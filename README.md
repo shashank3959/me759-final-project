@@ -119,9 +119,8 @@ nvcc main.cu classifier.cu -Xcompiler -O3 -Xcompiler -fopenmp -Xcompiler -Wall -
 In order to check the functionality of our C++ implementation of Naive Bayes variants, we also run the Python machine learning package scikit-learn to compare our accuracy on the test set. For example, to test ComplementNB use algoID 4 <br>
 
 ### Running on Euler
-Change the algoID variable in the file name checkFunctionality.sh and run the script using the following command and view in the accuracy in the log file.
-Make sure all the requirements are installed in "requirements.txt" before
-running this test.
+Install packages if you have not already done by the following the steps above and change the algoID variable in the following command and view in the accuracy in the log file.
+
 ```
 pip3 install --user -r requirements.txt
 
