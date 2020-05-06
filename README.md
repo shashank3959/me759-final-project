@@ -20,6 +20,8 @@ We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-
 If you do this step, you need not pre-process your data!
 ```
 bash download_dataset.sh
+
+and paste all the CSV files in the data folder if in case if you find the files in the main folder instead of data folder.
 ```
 Choose [y] anywhere if asked to replace old files.
 
