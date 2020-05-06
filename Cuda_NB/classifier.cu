@@ -500,7 +500,6 @@ BernoulliNBLearnKernel(float *feature_probs, float *class_count_,
 
       if (feat_col == 0) {
         class_count_[i] = class_count_[i] / (float)n_samples_;
-        printf("prior at %u = %lf\n", i, class_count_[i]);
       }
     }
   }

@@ -16,13 +16,13 @@ The following sections expand on the above steps.
 ## 1. Get the dataset
 We used [IMDb movie review dataset](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) for the Document Classification Task (Bernoulli NB, Multinomial NB, Complement NB) and the Iris Dataset (GaussianNB) for flower classification. We the text data into suitable format such as onehot and bag of words representation using Python packages such as NLTK and scikit-learn.
 
-### Download and extract the already pre-processed data (preferred)
+### Download and extract the already pre-processed data (Option 1)
 If you do this step, you need not pre-process your data!
 ```
 bash download_dataset.sh
 ```
 
-### Preprocess your own data
+### Preprocess your own data (Option 2)
 This is in case you don't like to download random files from the internet...we can understand.
 
 #### Running on Euler or a Linux based system
