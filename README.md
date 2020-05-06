@@ -26,7 +26,7 @@ bash download_dataset.sh
 This is in case you don't like to download random files from the internet...we can understand.
 
 #### Running on Euler or a Linux based system
-In order to run the Data Preprocessing python script on Euler, open preprocessData.sh file and change the algoID variable to the following options to create a data-set for that particular algorithm,
+In order to run the Data Preprocessing python script on Euler, please follow this link to install anaconda on Euler [here](https://wacc.wisc.edu/resources/docs/thirdparty.html) to install python and follow these change the algoID variable to the following options to create a data-set for that particular algorithm,
 
 * --algoID 1 for GaussianNB <br>
 * --algoID 2 for BernoulliNB <br>
@@ -35,7 +35,7 @@ In order to run the Data Preprocessing python script on Euler, open preprocessDa
 
 1. install all dependencies using <br>
 ```
-pip3 install --user -r requirements.txt
+python preprocessData.py --algoID 2
 ```
 
 2. run the script using <br>
